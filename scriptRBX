@@ -1,0 +1,1158 @@
+game.StarterGui:SetCore("SendNotification", {
+    Title = "LOADING"; -- Заголовок
+    Text = "LOAD PATCH"; -- Текст
+    Duration = 5; -- Сколько секунд будет висеть (по умолчанию 5)
+})
+local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+
+-- === НАСТРОЙКИ ===
+local CORRECT_KEY = "FREE_SLAKINKOD"
+local KEY_LINK = "https://t.me/HDVCHIKpublic/27"
+local isAuthenticated = false
+local attempts = 0 
+
+-- === ФУНКЦИИ СКРИПТА ===
+local function StartScript()
+    local char = Players.LocalPlayer.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then hum.WalkSpeed = 16 hum.JumpPower = 50 end
+    end
+    -- Чамсы
+    local function applyChams(player)
+        player.CharacterAdded:Connect(function(c) Instance.new("Highlight", c).FillColor = Color3.new(1,1,1) end)
+        if player.Character then Instance.new("Highlight", player.Character).FillColor = Color3.new(1,1,1) end
+    end
+    for _, p in pairs(Players:GetPlayers()) do if p ~= Players.LocalPlayer then applyChams(p) end end
+    Players.PlayerAdded:Connect(applyChams)
+    -- Индикатор ПКМ
+    local sg = Instance.new("ScreenGui", CoreGui)
+    local rmb = Instance.new("TextLabel", sg)
+    rmb.Size = UDim2.new(0, 80, 0, 30)
+    rmb.Position = UDim2.new(0, 10, 0, 10)
+    rmb.BackgroundColor3 = Color3.new(0,0,0)
+    rmb.BackgroundTransparency = 0.5
+    rmb.TextColor3 = Color3.new(1,1,1)
+    rmb.Text = "RMB"
+    Instance.new("UICorner", rmb)
+    RunService.RenderStepped:Connect(function()
+        local pressed = UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2)
+        rmb.BackgroundColor3 = pressed and Color3.new(1,1,1) or Color3.new(0,0,0)
+        rmb.TextColor3 = pressed and Color3.new(0,0,0) or Color3.new(1,1,1)
+    end)
+end
+
+-- === ИНТЕРФЕЙС ===
+local screenGui = Instance.new("ScreenGui", CoreGui)
+screenGui.IgnoreGuiInset = true
+
+local blur = Instance.new("BlurEffect", Lighting)
+blur.Size = 20
+
+local mainFrame = Instance.new("Frame", screenGui)
+mainFrame.Size = UDim2.new(1, 0, 1, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+mainFrame.Active = true
+
+-- Экран загрузки
+local loadBox = Instance.new("Frame", mainFrame)
+loadBox.Size = UDim2.new(0, 450, 0, 150)
+loadBox.Position = UDim2.new(0.5, -225, 0.5, -75)
+loadBox.BackgroundTransparency = 1
+
+local loadIcon = Instance.new("ImageLabel", loadBox)
+loadIcon.Size = UDim2.new(0, 60, 0, 60)
+loadIcon.Position = UDim2.new(0.5, -30, 0, 0)
+loadIcon.Image = "rbxassetid://6031265917"
+loadIcon.BackgroundTransparency = 1
+
+local loadText = Instance.new("TextLabel", loadBox)
+loadText.Size = UDim2.new(1, 0, 0, 40)
+loadText.Position = UDim2.new(0, 0, 0.6, 0)
+loadText.Text = "Подождите мы загрузим ресурсы для вас"
+loadText.TextColor3 = Color3.new(1, 1, 1)
+loadText.Font = Enum.Font.GothamMedium
+loadText.TextSize = 22
+loadText.BackgroundTransparency = 1
+
+-- Окно логина
+local loginBox = Instance.new("Frame", mainFrame)
+loginBox.Size = UDim2.new(0, 320, 0, 260)
+loginBox.Position = UDim2.new(0.5, -160, 0.5, -130)
+loginBox.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+loginBox.Visible = false
+Instance.new("UICorner", loginBox)
+
+local keyInput = Instance.new("TextBox", loginBox)
+keyInput.Size = UDim2.new(0, 260, 0, 45)
+keyInput.Position = UDim2.new(0.5, -130, 0.25, 0)
+keyInput.PlaceholderText = "Введите ключ..."
+keyInput.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+keyInput.TextColor3 = Color3.new(1, 1, 1)
+Instance.new("UICorner", keyInput)
+
+local btn = Instance.new("TextButton", loginBox)
+btn.Size = UDim2.new(0, 260, 0, 45)
+btn.Position = UDim2.new(0.5, -130, 0.5, 0)
+btn.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+btn.Text = "ACTIVATE"
+btn.TextColor3 = Color3.new(1, 1, 1)
+btn.Font = Enum.Font.GothamBold
+Instance.new("UICorner", btn)
+
+local getBtn = Instance.new("TextButton", loginBox)
+getBtn.Size = UDim2.new(0, 260, 0, 35)
+getBtn.Position = UDim2.new(0.5, -130, 0.75, 0)
+getBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+getBtn.Text = "GET KEY"
+getBtn.TextColor3 = Color3.new(1, 1, 1)
+Instance.new("UICorner", getBtn)
+
+-- Анимация загрузки (10-30 сек)
+task.spawn(function()
+    local rotate = TweenService:Create(loadIcon, TweenInfo.new(1.5, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1), {Rotation = 360})
+    rotate:Play()
+    
+    local dots = ""
+    local start = tick()
+    local duration = math.random(60, 85) -- ТВОЙ ЗАПРОС: 10-30 сек
+    
+    while tick() - start < duration do
+        dots = dots .. "."
+        if #dots > 3 then dots = "" end
+        loadText.Text = "Подождите мы загрузим ресурсы для вас! (загрузка примерно 40-60 сек)" .. dots
+        task.wait(0.6)
+    end
+    
+    loadBox:Destroy()
+    loginBox.Visible = true
+end)
+
+-- Логика
+getBtn.MouseButton1Click:Connect(function()
+    if setclipboard then setclipboard(KEY_LINK) getBtn.Text = "LINK COPIED!" task.wait(2) getBtn.Text = "GET KEY" end
+end)
+
+btn.MouseButton1Click:Connect(function()
+    if keyInput.Text == CORRECT_KEY then
+        isAuthenticated = true
+        btn.Text = "SUCCESS"
+        btn.BackgroundColor3 = Color3.new(0, 1, 0)
+        task.wait(0.3)
+        TweenService:Create(blur, TweenInfo.new(0.5), {Size = 0}):Play()
+        local f = TweenService:Create(mainFrame, TweenInfo.new(0.5), {BackgroundTransparency = 1})
+        f:Play()
+        f.Completed:Connect(function() blur:Destroy() screenGui:Destroy() StartScript() end)
+    else
+        attempts = attempts + 1
+        if attempts >= 3 then
+            Players.LocalPlayer:Kick("Вы ввели неверный ключ 3 раза. Доступ заблокирован!")
+        else
+            btn.Text = "ERROR ("..attempts.."/3)"
+            btn.BackgroundColor3 = Color3.new(1, 0, 0)
+            task.wait(1.5)
+            btn.Text = "ACTIVATE"
+            btn.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+        end
+    end
+end)
+
+RunService.Stepped:Connect(function()
+    if not isAuthenticated then
+        pcall(function() Players.LocalPlayer.Character.Humanoid.WalkSpeed = 0 end)
+    end
+end)
+
+
+
+local Players = game:GetService("Players")
+local RS = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+local AimKey = Enum.UserInputType.MouseButton2 -- Правая кнопка мыши
+local IsAiming = false
+
+local function CreateESP(player)
+    local function Setup()
+        local char = player.Character or player.CharacterAdded:Wait()
+        local hum = char:WaitForChild("Humanoid", 10)
+        local root = char:WaitForChild("HumanoidRootPart", 10)
+        if not root or not hum then return end
+
+        -- 1. Квадрат и Трассер через Drawing API (если Xeno поддерживает) или Highlight
+        local highlight = Instance.new("Highlight", char)
+        highlight.FillTransparency = 1
+        highlight.OutlineColor = Color3.new(1, 0, 0)
+        highlight.OutlineTransparency = 0
+
+        -- 2. Маленькое табло (Ник + ХП + Трассер-линия)
+        local bill = Instance.new("BillboardGui", char)
+        bill.Name = "ESP_Small"
+        bill.AlwaysOnTop = true
+        bill.Size = UDim2.new(0, 100, 0, 40)
+        bill.ExtentsOffset = Vector3.new(0, -3.5, 0) -- Текст внизу под ногами
+
+        local label = Instance.new("TextLabel", bill)
+        label.BackgroundTransparency = 1
+        label.Size = UDim2.new(1, 0, 1, 0)
+        label.TextColor3 = Color3.new(1, 1, 1)
+        label.TextStrokeTransparency = 0.5
+        label.TextSize = 10 -- Маленький размер
+        label.Text = string.format("%s | %d HP", player.Name, math.floor(hum.Health))
+
+        -- Трассер (простая линия через Beam или Attachment для стабильности в Xeno)
+        local a0 = Instance.new("Attachment", root)
+        local a1 = Instance.new("Attachment", LocalPlayer.Character:WaitForChild("HumanoidRootPart"))
+        local beam = Instance.new("Beam", root)
+        beam.Attachment0 = a0
+        beam.Attachment1 = a1
+        beam.Width0 = 0.05
+        beam.Width1 = 0.05
+        beam.FaceCamera = true
+        beam.Color = ColorSequence.new(Color3.new(1, 0, 0))
+        beam.Transparency = NumberSequence.new(0.5)
+
+        hum.HealthChanged:Connect(function()
+            label.Text = string.format("%s | %d HP", player.Name, math.floor(hum.Health))
+        end)
+    end
+    Setup()
+    player.CharacterAdded:Connect(Setup)
+end
+
+-- Запуск ESP
+for _, p in pairs(Players:GetPlayers()) do
+    if p ~= LocalPlayer then CreateESP(p) end
+end
+Players.PlayerAdded:Connect(CreateESP)
+
+-- АИМБОТ НА ПКМ
+local function GetClosest()
+    local target, dist = nil, math.huge
+    local mousePos = UIS:GetMouseLocation()
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
+            local pos, vis = Camera:WorldToViewportPoint(p.Character.Head.Position)
+            if vis then
+                local mDist = (Vector2.new(mousePos.X, mousePos.Y) - Vector2.new(pos.X, pos.Y)).Magnitude
+                if mDist < dist then dist = mDist; target = p end
+            end
+        end
+    end
+    return target
+end
+
+UIS.InputBegan:Connect(function(i) if i.UserInputType == AimKey then IsAiming = true end end)
+UIS.InputEnded:Connect(function(i) if i.UserInputType == AimKey then IsAiming = false end end)
+
+RS.RenderStepped:Connect(function()
+    if IsAiming then
+        local t = GetClosest()
+        if t and t.Character:FindFirstChild("Head") then
+            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, t.Character.Head.Position), 0.2) -- Плавная наводка
+        end
+    end
+end)
+local Range = 20 -- Дистанция (радиус) поражения
+local Player = game.Players.LocalPlayer
+local RunService = game:GetService("RunService")
+
+RunService.Stepped:Connect(function()
+    local Character = Player.Character
+    local Tool = Character and Character:FindFirstChildOfClass("Tool")
+    
+    -- Проверяем, есть ли оружие в руках
+    if Tool then
+        for _, v in pairs(game.Players:GetPlayers()) do
+            if v ~= Player and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+                local TargetRoot = v.Character.HumanoidRootPart
+                local Distance = (Character.HumanoidRootPart.Position - TargetRoot.Position).Magnitude
+                
+                -- Если враг в радиусе, атакуем
+                if Distance <= Range then
+                    -- Активируем инструмент (удар)
+                    Tool:Activate()
+                    
+                    -- Телепортируем "удар" к врагу (работает во многих мечах)
+                    if Tool:FindFirstChild("Handle") then
+                        firetouchinterest(TargetRoot, Tool.Handle, 0)
+                        firetouchinterest(TargetRoot, Tool.Handle, 1)
+                    end
+                end
+            end
+        end
+    end
+end)
+local players = game:GetService("Players")
+local localPlayer = players.LocalPlayer
+local runService = game:GetService("RunService")
+local camera = workspace.CurrentCamera
+
+-- Функция для создания ESP
+local function createESP(player)
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "ESP_Highlight"
+    highlight.FillColor = Color3.fromRGB(255, 0, 0) -- Красный цвет
+    highlight.OutlineColor = Color3.fromRGB(255, 255, 255) -- Белая обводка
+    highlight.FillTransparency = 0.5
+    highlight.OutlineTransparency = 0
+    highlight.Parent = game.CoreGui -- Скрываем в CoreGui
+
+    local function update()
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            highlight.Adornee = player.Character
+        else
+            highlight.Adornee = nil
+        end
+    end
+
+    runService.RenderStepped:Connect(update)
+end
+
+-- Применяем ко всем игрокам
+for _, player in pairs(players:GetPlayers()) do
+    if player ~= localPlayer then
+        createESP(player)
+    end
+end
+
+players.PlayerAdded:Connect(function(player)
+    if player ~= localPlayer then
+        createESP(player)
+    end
+end)
+
+print("Kill Aura Loaded! Возьми меч в руки.")
+local Players = game:GetService("Players")
+local RS = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+-- --- НАСТРОЙКИ ---
+local AimKey = Enum.UserInputType.MouseButton2
+local FOV_Radius = 150 -- Радиус круга
+local IsAiming = false
+
+-- Создание круга через Drawing API
+local Circle = Drawing.new("Circle")
+Circle.Visible = true
+Circle.Radius = FOV_Radius
+Circle.Thickness = 1
+Circle.NumSides = 64
+Circle.Transparency = 1
+Circle.Filled = false
+Circle.Color = Color3.fromRGB(255, 255, 255) -- Белый цвет
+
+-- Привязка круга к курсору
+RS.RenderStepped:Connect(function()
+    local mousePos = UIS:GetMouseLocation()
+    Circle.Position = Vector2.new(mousePos.X, mousePos.Y)
+end)
+
+-- Поиск цели только внутри круга
+local function GetClosestInFOV()
+    local target, dist = nil, FOV_Radius
+    local mousePos = UIS:GetMouseLocation()
+
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
+            local pos, vis = Camera:WorldToViewportPoint(p.Character.Head.Position)
+            if vis then
+                local mDist = (Vector2.new(mousePos.X, mousePos.Y) - Vector2.new(pos.X, pos.Y)).Magnitude
+                if mDist < dist then
+                    dist = mDist
+                    target = p
+                end
+            end
+        end
+    end
+    return target
+end
+
+-- Логика нажатия ПКМ
+UIS.InputBegan:Connect(function(i) if i.UserInputType == AimKey then IsAiming = true end end)
+UIS.InputEnded:Connect(function(i) if i.UserInputType == AimKey then IsAiming = false end end)
+
+-- Сама наводка
+RS.RenderStepped:Connect(function()
+    if IsAiming then
+        local t = GetClosestInFOV()
+        if t then
+            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, t.Character.Head.Position), 0.15)
+        end
+    end
+end)
+-- Настройки
+_G.HeadSize = 5 -- Установи размер (обычно от 5 до 15)
+_G.Disabled = false -- Поставь true, чтобы выключить
+
+game:GetService('RunService').RenderStepped:Connect(function()
+    if _G.Disabled then return end
+    
+    for _, player in ipairs(game:GetService('Players'):GetPlayers()) do
+        if player ~= game:GetService('Players').LocalPlayer then
+            pcall(function()
+                local head = player.Character.Head
+                head.Size = Vector3.new(_G.HeadSize, _G.HeadSize, _G.HeadSize)
+                head.Transparency = 0.5 -- Слегка прозрачный, чтобы видеть реальную голову
+                head.BrickColor = BrickColor.new("Bright blue")
+                head.Material = "Neon"
+                head.CanCollide = false -- Чтобы не мешало ходить
+            end)
+        end
+    end
+end)
+-- Настройки
+local BoxColor = Color3.new(1, 1, 1) -- Белый цвет
+local Thickness = 2 -- Толщина линий
+
+function createESP(player)
+    player.CharacterAdded:Connect(function(character)
+        local root = character:WaitForChild("HumanoidRootPart")
+        
+        -- Создаем GUI над игроком
+        local gui = Instance.new("BillboardGui")
+        gui.Name = "ESP_Box"
+        gui.Adornee = root
+        gui.AlwaysOnTop = true
+        gui.Size = UDim2.new(4.5, 0, 6, 0) -- Размер квадрата
+        gui.Parent = root
+
+        -- Сама рамка (белый квадрат)
+        local frame = Instance.new("Frame")
+        frame.Size = UDim2.new(1, 0, 1, 0)
+        frame.BackgroundTransparency = 1 -- Прозрачный внутри
+        frame.BorderColor3 = BoxColor
+        frame.BorderSizePixel = Thickness
+        frame.Parent = gui
+    end)
+end
+
+-- Применяем для всех текущих и новых игроков
+for _, player in pairs(game:GetService("Players"):GetPlayers()) do
+    if player ~= game:GetService("Players").LocalPlayer then
+        createESP(player)
+    end
+end
+
+game:GetService("Players").PlayerAdded:Connect(createESP)
+
+-- === СЧЕТЧИК ПИНГА (ПРАВЫЙ ВЕРХНИЙ УГОЛ) ===
+local screenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+local pingLabel = Instance.new("TextLabel", screenGui)
+
+-- Настройка внешнего вида
+pingLabel.Size = UDim2.new(0, 120, 0, 25)
+pingLabel.Position = UDim2.new(1, -130, 0, 10) -- Позиция в правом углу
+pingLabel.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+pingLabel.BackgroundTransparency = 0.5
+pingLabel.TextColor3 = Color3.new(1, 1, 1)
+pingLabel.TextSize = 14
+pingLabel.Font = Enum.Font.Code
+pingLabel.BorderSizePixel = 0
+
+-- Скругление углов (опционально)
+local uiCorner = Instance.new("UICorner", pingLabel)
+uiCorner.CornerRadius = UDim.new(0, 4)
+
+-- Обновление данных
+game:GetService("RunService").RenderStepped:Connect(function()
+    local ping = math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue())
+    pingLabel.Text = "Ping: " .. ping .. "ms"
+    
+    -- Смена цвета в зависимости от пинга
+    if ping < 80 then
+        pingLabel.TextColor3 = Color3.fromRGB(0, 255, 127) -- Хороший (зеленый)
+    elseif ping < 170 then
+        pingLabel.TextColor3 = Color3.fromRGB(255, 200, 0) -- Средний (желтый)
+    else
+        pingLabel.TextColor3 = Color3.fromRGB(255, 80, 80) -- Плохой (красный)
+    end
+end)
+-- === ПИНГ НАД ГОЛОВАМИ ДРУГИХ ИГРОКОВ ===
+local function createPingDisplay(player)
+    local function setup(character)
+        local head = character:WaitForChild("Head", 10)
+        if not head then return end
+        
+        -- Удаляем старое, если есть
+        if head:FindFirstChild("PingTag") then head.PingTag:Destroy() end
+
+        -- Создаем текст над головой
+        local gui = Instance.new("BillboardGui")
+        gui.Name = "PingTag"
+        gui.Adornee = head
+        gui.AlwaysOnTop = true
+        gui.ExtentsOffset = Vector3.new(0, 3, 0) -- Высота над головой
+        gui.Size = UDim2.new(0, 100, 0, 40)
+        gui.Parent = head
+
+        local label = Instance.new("TextLabel")
+        label.Parent = gui
+        label.BackgroundTransparency = 1
+        label.Size = UDim2.new(1, 0, 1, 0)
+        label.TextColor3 = Color3.new(1, 1, 1)
+        label.TextStrokeTransparency = 0 -- Обводка текста, чтобы было видно на любом фоне
+        label.Font = Enum.Font.Code
+        label.TextSize = 14
+
+        -- Цикл обновления пинга игрока
+        task.spawn(function()
+            while character:IsDescendantOf(game) do
+                local ping = player:GetNetworkPing()
+                ping = math.floor(ping * 1000)
+                label.Text = ping .. " ms"
+                
+                -- Цвет в зависимости от лагов игрока
+                if ping < 100 then label.TextColor3 = Color3.new(0, 1, 0)
+                elseif ping < 200 then label.TextColor3 = Color3.new(1, 1, 0)
+                else label.TextColor3 = Color3.new(1, 0, 0) end
+                
+                task.wait(1)
+            end
+        end)
+    end
+    -- === ЭФФЕКТ МЕСТА СМЕРТИ (DEATH MARKERS) ===
+
+local function createDeathMarker(character)
+    local root = character:WaitForChild("HumanoidRootPart", 5)
+    if not root then return end
+
+    -- Запоминаем позицию смерти
+    local deathPos = root.Position
+
+    -- Создаем визуальный эффект (Белая сфера)
+    local marker = Instance.new("Part")
+    marker.Name = "DeathMarker"
+    marker.Shape = Enum.PartType.Ball
+    marker.Size = Vector3.new(3, 3, 3)
+    marker.Position = deathPos
+    marker.Anchored = true
+    marker.CanCollide = false
+    marker.Color = Color3.new(1, 1, 1) -- Белый
+    marker.Material = Enum.Material.Neon
+    marker.Transparency = 0.5
+    marker.Parent = workspace
+
+    -- Добавляем обводку, чтобы было видно сквозь стены
+    local highlight = Instance.new("Highlight", marker)
+    highlight.FillColor = Color3.new(1, 1, 1)
+    highlight.OutlineColor = Color3.new(1, 1, 1)
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+
+    -- Удаляем метку через 15 секунд (чтобы не засорять карту)
+    task.delay(15, function()
+        if marker then
+            TweenService:Create(marker, TweenInfo.new(1), {Size = Vector3.new(0,0,0), Transparency = 1}):Play()
+            task.wait(1)
+            marker:Destroy()
+        end
+    end)
+end
+
+-- Отслеживаем смерть всех игроков
+local function monitorDeath(player)
+    player.CharacterAppearanceLoaded:Connect(function(char)
+        local humanoid = char:WaitForChild("Humanoid")
+        humanoid.Died:Connect(function()
+            createDeathMarker(char)
+        end)
+    end)
+end
+
+for _, p in pairs(game.Players:GetPlayers()) do
+    if p ~= game.Players.LocalPlayer then monitorDeath(p) end
+end
+game.Players.PlayerAdded:Connect(monitorDeath)
+
+    if player.Character then setup(player.Character) end
+    player.CharacterAdded:Connect(setup)
+end
+
+-- Запуск для всех игроков
+for _, p in pairs(game:GetService("Players"):GetPlayers()) do
+    if p ~= game:GetService("Players").LocalPlayer then createPingDisplay(p) end
+end
+game:GetService("Players").PlayerAdded:Connect(createPingDisplay)
+
+-- === ТВОЙ ЛИЧНЫЙ ПИНГ (ПРАВЫЙ ВЕРХНИЙ УГОЛ) ===
+local sg = Instance.new("ScreenGui", game:GetService("CoreGui"))
+local lp = Instance.new("TextLabel", sg)
+lp.Size = UDim2.new(0, 100, 0, 25)
+lp.Position = UDim2.new(1, -110, 0, 10)
+lp.BackgroundColor3 = Color3.new(0, 0, 0)
+lp.BackgroundTransparency = 0.5
+lp.TextColor3 = Color3.new(1, 1, 1)
+lp.Font = Enum.Font.Code
+lp.TextSize = 14
+lp.BorderSizePixel = 0
+
+game:GetService("RunService").RenderStepped:Connect(function()
+    local myPing = math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue())
+    lp.Text = "MY: " .. myPing .. "ms"
+end)
+-- === НАДГОЛОВНЫЙ ПИНГ ДЛЯ ДРУГИХ ===
+local function createPingDisplay(player)
+    local function setup(character)
+        local head = character:WaitForChild("Head", 10)
+        if not head then return end
+        if head:FindFirstChild("PingTag") then head.PingTag:Destroy() end
+
+        local gui = Instance.new("BillboardGui")
+        gui.Name = "PingTag"
+        gui.Adornee = head
+        gui.AlwaysOnTop = true
+        gui.ExtentsOffset = Vector3.new(0, 3, 0)
+        gui.Size = UDim2.new(0, 100, 0, 40)
+        gui.Parent = head
+
+        local label = Instance.new("TextLabel")
+        label.Parent = gui
+        label.BackgroundTransparency = 1
+        label.Size = UDim2.new(1, 0, 1, 0)
+        label.TextColor3 = Color3.new(1, 1, 1)
+        label.TextStrokeTransparency = 0
+        label.Font = Enum.Font.Code
+        label.TextSize = 14
+
+        task.spawn(function()
+            while character:IsDescendantOf(game) do
+                local ping = player:GetNetworkPing()
+                ping = math.floor(ping * 1000)
+                label.Text = ping .. " ms"
+                if ping < 100 then label.TextColor3 = Color3.new(0, 1, 0)
+                elseif ping < 200 then label.TextColor3 = Color3.new(1, 1, 0)
+                else label.TextColor3 = Color3.new(1, 0, 0) end
+                task.wait(1)
+            end
+        end)
+    end
+    if player.Character then setup(player.Character) end
+    player.CharacterAdded:Connect(setup)
+end
+
+for _, p in pairs(game:GetService("Players"):GetPlayers()) do
+    if p ~= game:GetService("Players").LocalPlayer then createPingDisplay(p) end
+end
+game:GetService("Players").PlayerAdded:Connect(createPingDisplay)
+
+-- === ИНТЕРФЕЙС ДЛЯ СЕБЯ (PING И FPS) ===
+local screenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+
+-- Твой пинг (Справа вверху)
+local pingLabel = Instance.new("TextLabel", screenGui)
+pingLabel.Size = UDim2.new(0, 100, 0, 25)
+pingLabel.Position = UDim2.new(1, -110, 0, 10)
+pingLabel.BackgroundColor3 = Color3.new(0, 0, 0)
+pingLabel.BackgroundTransparency = 0.5
+pingLabel.TextColor3 = Color3.new(1, 1, 1)
+pingLabel.Font = Enum.Font.Code
+pingLabel.TextSize = 14
+pingLabel.BorderSizePixel = 0
+
+-- Твой FPS (Слева внизу)
+local fpsLabel = Instance.new("TextLabel", screenGui)
+fpsLabel.Size = UDim2.new(0, 100, 0, 25)
+fpsLabel.Position = UDim2.new(0, 10, 1, -35)
+fpsLabel.BackgroundColor3 = Color3.new(0, 0, 0)
+fpsLabel.BackgroundTransparency = 0.5
+fpsLabel.TextColor3 = Color3.new(1, 1, 0) -- Желтый для FPS
+fpsLabel.Font = Enum.Font.Code
+fpsLabel.TextSize = 14
+fpsLabel.BorderSizePixel = 0
+
+-- Скругление для красоты
+Instance.new("UICorner", pingLabel).CornerRadius = UDim.new(0, 4)
+Instance.new("UICorner", fpsLabel).CornerRadius = UDim.new(0, 4)
+
+-- Цикл обновления
+local RunService = game:GetService("RunService")
+local Stats = game:GetService("Stats")
+
+RunService.RenderStepped:Connect(function(dt)
+    -- Обновление Пинга
+    local myPing = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
+    pingLabel.Text = "MY: " .. myPing .. "ms"
+    
+    -- Обновление FPS
+    local fps = math.floor(1/dt)
+    fpsLabel.Text = "FPS: " .. fps
+    
+    -- Цвет FPS в зависимости от производительности
+    if fps > 50 then fpsLabel.TextColor3 = Color3.new(0, 1, 0)
+    elseif fps > 30 then fpsLabel.TextColor3 = Color3.new(1, 1, 0)
+    else fpsLabel.TextColor3 = Color3.new(1, 0, 0) end
+end)
+-- === ИНДИКАТОР ПКМ (ТОЛЬКО ДЛЯ ТЕБЯ) ===
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+
+-- Создаем интерфейс
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "RMB_Indicator"
+screenGui.Parent = CoreGui
+
+local rmbLabel = Instance.new("TextLabel")
+rmbLabel.Parent = screenGui
+rmbLabel.Size = UDim2.new(0, 90, 0, 35)
+rmbLabel.Position = UDim2.new(0, 10, 0, 10) -- Левый верхний угол
+rmbLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+rmbLabel.BackgroundTransparency = 0.5
+rmbLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+rmbLabel.TextSize = 16
+rmbLabel.Font = Enum.Font.Code
+rmbLabel.Text = "RMB AIMBOT"
+rmbLabel.BorderSizePixel = 0
+
+-- Скругление углов
+local uiCorner = Instance.new("UICorner")
+uiCorner.CornerRadius = UDim.new(0, 6)
+uiCorner.Parent = rmbLabel
+
+-- Отслеживание нажатия ПКМ (MouseButton2)
+RunService.RenderStepped:Connect(function()
+    if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
+        -- Когда ПКМ нажата
+        rmbLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        rmbLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
+        rmbLabel.BackgroundTransparency = 0.2
+    else
+        -- Когда ПКM отпущена
+        rmbLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        rmbLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        rmbLabel.BackgroundTransparency = 0.5
+    end
+end)
+-- === ЭФФЕКТ МЕСТА СМЕРТИ С ТЕКСТОМ ===
+
+local function createDeathMarker(character, player)
+    local root = character:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
+    local deathPos = root.Position
+
+    -- 1. Визуальная сфера
+    local marker = Instance.new("Part")
+    marker.Size = Vector3.new(2, 2, 2)
+    marker.Position = deathPos
+    marker.Anchored = true
+    marker.CanCollide = false
+    marker.Shape = Enum.PartType.Ball
+    marker.Color = Color3.new(1, 1, 1)
+    marker.Material = Enum.Material.Neon
+    marker.Transparency = 0.6
+    marker.Parent = workspace
+
+    -- Чтобы сферу было видно сквозь стены
+    local highlight = Instance.new("Highlight", marker)
+    highlight.FillColor = Color3.new(1, 1, 1)
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+
+    -- 2. Текст над местом смерти
+    local billboard = Instance.new("BillboardGui")
+    billboard.Size = UDim2.new(0, 150, 0, 50)
+    billboard.Adornee = marker
+    billboard.AlwaysOnTop = true
+    billboard.ExtentsOffset = Vector3.new(0, 3, 0) -- Высота текста над сферой
+    billboard.Parent = marker
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = "DIED: " .. player.Name -- Текст "УМЕР: [Ник]"
+    label.TextColor3 = Color3.new(1, 1, 1)
+    label.TextStrokeTransparency = 0
+    label.Font = Enum.Font.Code
+    label.TextSize = 14
+    label.Parent = billboard
+
+    -- 3. Удаление через 20 секунд с анимацией
+    task.delay(20, function()
+        if marker then
+            local tween = game:GetService("TweenService"):Create(marker, TweenInfo.new(2), {Transparency = 1, Size = Vector3.new(0,0,0)})
+            game:GetService("TweenService"):Create(label, TweenInfo.new(2), {TextTransparency = 1}):Play()
+            tween:Play()
+            tween.Completed:Connect(function() marker:Destroy() end)
+        end
+    end)
+end
+
+-- Мониторинг игроков
+local function monitor(player)
+    player.CharacterAdded:Connect(function(char)
+        local hum = char:WaitForChild("Humanoid")
+        hum.Died:Connect(function()
+            createDeathMarker(char, player)
+        end)
+    end)
+end
+local lighting = game:GetService("Lighting")
+
+-- Отключаем тени и настраиваем освещение для макс. производительности
+lighting.GlobalShadows = false
+lighting.FogEnd = 9e9
+lighting.Brightness = 1
+
+-- Удаляем эффекты, которые могут нагружать систему
+for _, effect in pairs(lighting:GetChildren()) do
+    if effect:IsA("PostProcessEffect") or effect:IsA("BloomEffect") or effect:IsA("BlurEffect") or effect:IsA("SunRaysEffect") then
+        effect.Enabled = false
+    end
+end
+
+-- Дополнительно: упрощаем отрисовку текстур (Full FPS Boost)
+for _, obj in pairs(workspace:GetDescendants()) do
+    if obj:IsA("BasePart") then
+        obj.CastShadow = false
+    end
+end
+
+print("Тени успешно отключены!")
+local players = game:GetService("Players")
+local localPlayer = players.LocalPlayer
+local runService = game:GetService("RunService")
+
+local function createLookVector(player)
+    if player == localPlayer then return end
+
+    local function setupVector()
+        local char = player.Character
+        if not char then return end
+        local head = char:WaitForChild("Head", 5)
+        if not head then return end
+
+        -- Создаем визуальную линию (SelectionPart)
+        local attachment0 = Instance.new("Attachment", head)
+        local attachment1 = Instance.new("Attachment", head)
+        attachment1.Position = Vector3.new(0, 0, -10) -- Длина стрелки (10 блоков)
+
+        local beam = Instance.new("Beam")
+        beam.Attachment0 = attachment0
+        beam.Attachment1 = attachment1
+        beam.Width0 = 0.2
+        beam.Width1 = 0.05
+        beam.Color = ColorSequence.new(Color3.fromRGB(255, 0, 0)) -- Красный цвет
+        beam.FaceCamera = true
+        beam.Parent = head
+    end
+
+    player.CharacterAdded:Connect(setupVector)
+    setupVector()
+end
+
+-- Применяем для всех
+for _, player in pairs(players:GetPlayers()) do
+    createLookVector(player)
+end
+players.PlayerAdded:Connect(createLookVector)
+
+print("Стрелки направления взгляда активированы!")
+
+for _, p in pairs(game.Players:GetPlayers()) do monitor(p) end
+game.Players.PlayerAdded:Connect(monitor)
+local lighting = game:GetService("Lighting")
+
+-- ФУНКЦИЯ НОЧНОГО ЗРЕНИЯ И УДАЛЕНИЯ ТЕНЕЙ
+local function applyFullBright()
+    lighting.Brightness = 2
+    lighting.ClockTime = 14 -- Устанавливает время на полдень
+    lighting.FogEnd = 100000
+    lighting.GlobalShadows = false
+    lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+    lighting.Ambient = Color3.fromRGB(255, 255, 255) -- Максимальный свет везде
+end
+
+applyFullBright()
+
+-- Чтобы настройки не сбросились игровым циклом
+lighting:GetPropertyChangedSignal("Brightness"):Connect(applyFullBright)
+lighting:GetPropertyChangedSignal("ClockTime"):Connect(applyFullBright)
+lighting:GetPropertyChangedSignal("Ambient"):Connect(applyFullBright)
+
+-- Убираем тени у всех существующих и новых предметов
+for _, obj in pairs(workspace:GetDescendants()) do
+    if obj:IsA("BasePart") then
+        obj.CastShadow = false
+    end
+end
+
+workspace.DescendantAdded:Connect(function(obj)
+    if obj:IsA("BasePart") then
+        obj.CastShadow = false
+    end
+end)
+
+print("Ночное зрение и удаление теней активировано!")
+local players = game:GetService("Players")
+local localPlayer = players.LocalPlayer
+
+local function createToolDisplay(player)
+    if player == localPlayer then return end
+
+    local function setupGui(char)
+        local head = char:WaitForChild("Head", 10)
+        
+        -- Удаляем старый, если есть
+        if head:FindFirstChild("ToolDisplay") then head.ToolDisplay:Destroy() end
+
+        local bill = Instance.new("BillboardGui")
+        bill.Name = "ToolDisplay"
+        bill.Adornee = head
+        bill.Size = UDim2.new(0, 100, 0, 20) -- Уменьшен размер контейнера
+        bill.StudsOffset = Vector3.new(2, 1.5, 0) -- Чуть ниже и правее
+        bill.AlwaysOnTop = true
+        bill.Parent = head
+
+        local text = Instance.new("TextLabel")
+        text.Size = UDim2.new(1, 0, 1, 0)
+        text.BackgroundTransparency = 1
+        text.TextColor3 = Color3.fromRGB(255, 255, 255) -- Белый цвет для аккуратности
+        text.TextStrokeTransparency = 0.5 -- Легкая обводка
+        text.TextSize = 12 -- ФИКСИРОВАННЫЙ МАЛЕНЬКИЙ РАЗМЕР
+        text.TextXAlignment = Enum.TextXAlignment.Left -- Выравнивание по левому краю
+        text.Text = ""
+        text.Parent = bill
+
+        local function updateTool()
+            local tool = char:FindFirstChildOfClass("Tool")
+            if tool then
+                text.Text = "Item: " .. tool.Name
+            else
+                text.Text = ""
+            end
+        end
+
+        char.ChildAdded:Connect(updateTool)
+        char.ChildRemoved:Connect(updateTool)
+        updateTool()
+    end
+
+    player.CharacterAdded:Connect(setupGui)
+    if player.Character then setupGui(player.Character) end
+end
+
+local UIS = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+
+-- ГЛАВНОЕ ОКНО
+local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.new(0, 140, 0, 170)
+MainFrame.Position = UDim2.new(1, -160, 1, -220) 
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.BackgroundTransparency = 0.4 -- СДЕЛАНО ПРОЗРАЧНЕЕ
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+
+local layout = Instance.new("UIListLayout", MainFrame)
+layout.Padding = UDim.new(0, 8)
+layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+layout.VerticalAlignment = Enum.VerticalAlignment.Center
+
+-- ФУНКЦИЯ СОЗДАНИЯ КНОПКИ С ИНДИКАТОРОМ
+local function CreateToggleButton(callback)
+    local btn = Instance.new("TextButton", MainFrame)
+    btn.Size = UDim2.new(0, 120, 0, 32)
+    btn.Text = "" 
+    btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    btn.BackgroundTransparency = 0.3
+    btn.BorderSizePixel = 0
+    
+    local indicator = Instance.new("Frame", btn)
+    indicator.Size = UDim2.new(0, 10, 0, 10)
+    indicator.Position = UDim2.new(1, -15, 0.5, -5)
+    indicator.BackgroundColor3 = Color3.fromRGB(255, 0, 0) -- По умолчанию КРАСНЫЙ
+    indicator.BorderSizePixel = 0
+    
+    local active = false
+    btn.MouseButton1Click:Connect(function()
+        active = not active
+        indicator.BackgroundColor3 = active and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+        callback(active)
+    end)
+end
+
+-- 1. Anti-AFK
+CreateToggleButton(function(state)
+    if state then
+        _G.AntiAFK = true
+        local vu = game:GetService("VirtualUser")
+        Players.LocalPlayer.Idled:Connect(function()
+            if _G.AntiAFK then
+                vu:CaptureController()
+                vu:ClickButton2(Vector2.new())
+            end
+        end)
+    else
+        _G.AntiAFK = false
+    end
+end)
+
+-- 2. Invisible
+CreateToggleButton(function(state)
+    local char = Players.LocalPlayer.Character
+    if char then
+        for _, v in pairs(char:GetDescendants()) do
+            if v:IsA("BasePart") or v:IsA("Decal") then
+                v.Transparency = state and 1 or 0
+            end
+        end
+    end
+end)
+
+-- 3. FullBright
+CreateToggleButton(function(state)
+    if state then
+        Lighting.GlobalShadows = false
+        Lighting.Ambient = Color3.new(1,1,1)
+    else
+        Lighting.GlobalShadows = true
+        Lighting.Ambient = Color3.new(0.5, 0.5, 0.5)
+    end
+end)
+
+-- 4. ESP (Стрелки + Предметы)
+CreateToggleButton(function(state)
+    if state then
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= Players.LocalPlayer and p.Character then
+                local h = p.Character:FindFirstChild("Head")
+                if h and not h:FindFirstChild("ESP_UI") then
+                    local b = Instance.new("BillboardGui", h)
+                    b.Name = "ESP_UI"
+                    b.Size = UDim2.new(0, 80, 0, 20)
+                    b.StudsOffset = Vector3.new(1.5, 0, 0)
+                    b.AlwaysOnTop = true
+                    local t = Instance.new("TextLabel", b)
+                    t.Size = UDim2.new(1,0,1,0)
+                    t.TextSize = 10
+                    t.TextColor3 = Color3.new(1,1,1)
+                    t.BackgroundTransparency = 1
+                    
+                    local att0 = Instance.new("Attachment", h)
+                    local att1 = Instance.new("Attachment", h)
+                    att1.Position = Vector3.new(0,0,-15)
+                    local beam = Instance.new("Beam", h)
+                    beam.Name = "ESP_Beam"
+                    beam.Attachment0 = att0
+                    beam.Attachment1 = att1
+                    beam.Width0, beam.Width1 = 0.1, 0.02
+                    beam.Color = ColorSequence.new(Color3.new(1,0,0))
+
+                    RunService.RenderStepped:Connect(function()
+                        local item = p.Character:FindFirstChildOfClass("Tool")
+                        t.Text = item and item.Name or ""
+                    end)
+                end
+            end
+        end
+    else
+        -- Удаление ESP при выключении
+        for _, p in pairs(Players:GetPlayers()) do
+            if p.Character and p.Character:FindFirstChild("Head") then
+                local h = p.Character.Head
+                if h:FindFirstChild("ESP_UI") then h.ESP_UI:Destroy() end
+                if h:FindFirstChild("ESP_Beam") then h.ESP_Beam:Destroy() end
+            end
+        end
+    end
+end)
+
+-- ЛОГИКА ПЕРЕТАСКИВАНИЯ
+local dragStart, startPos, dragging
+MainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+    end
+end)
+UIS.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+UIS.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
+
+-- Shift Hide
+UIS.InputBegan:Connect(function(input, gpe)
+    if not gpe and input.KeyCode == Enum.KeyCode.RightShift then
+        MainFrame.Visible = not MainFrame.Visible
+    end
+end)
+
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+
+-- СОЗДАНИЕ GUI ИНДИКАТОРА
+local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+ScreenGui.Name = "HealthIndicator"
+
+-- Основная рамка (Обводка)
+local HealthFrame = Instance.new("Frame", ScreenGui)
+HealthFrame.Size = UDim2.new(0, 200, 0, 25)
+HealthFrame.Position = UDim2.new(0.5, -100, 1, -60) -- По центру внизу
+HealthFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+HealthFrame.BorderSizePixel = 2
+HealthFrame.BorderColor3 = Color3.fromRGB(0, 0, 0) -- Черная обводка
+
+-- Сама полоска здоровья
+local Bar = Instance.new("Frame", HealthFrame)
+Bar.Size = UDim2.new(1, 0, 1, 0)
+Bar.BackgroundColor3 = Color3.fromRGB(0, 255, 0) -- Зеленая полоска
+Bar.BorderSizePixel = 0
+
+-- Текст с цифрами
+local HealthText = Instance.new("TextLabel", HealthFrame)
+HealthText.Size = UDim2.new(1, 0, 1, 0)
+HealthText.BackgroundTransparency = 1
+HealthText.TextColor3 = Color3.fromRGB(255, 255, 255)
+HealthText.TextStrokeTransparency = 0 -- Чтобы цифры было лучше видно
+HealthText.Font = Enum.Font.SourceSansBold
+HealthText.TextSize = 16
+HealthText.ZIndex = 3 -- Текст поверх полоски
+HealthText.Text = "100 / 100"
+
+-- ОБНОВЛЕНИЕ
+local function updateHealth()
+    local char = player.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            local hp = math.floor(hum.Health)
+            local maxHp = math.floor(hum.MaxHealth)
+            
+            -- Плавное изменение размера полоски
+            Bar.Size = UDim2.new(hp / maxHp, 0, 1, 0)
+            HealthText.Text = hp .. " / " .. maxHp
+            
+            -- Смена цвета если мало ХП
+            if hp < (maxHp * 0.3) then
+                Bar.BackgroundColor3 = Color3.fromRGB(255, 0, 0) -- Красный
+            elseif hp < (maxHp * 0.6) then
+                Bar.BackgroundColor3 = Color3.fromRGB(255, 255, 0) -- Желтый
+            else
+                Bar.BackgroundColor3 = Color3.fromRGB(0, 255, 0) -- Зеленый
+            end
+        end
+    end
+end
+
+RunService.RenderStepped:Connect(updateHealth)
+
+
+Notify("Cheat Active", "Приятной игры с читами от SLAKINA, " .. game.Players.LocalPlayer.Name .. "!")
