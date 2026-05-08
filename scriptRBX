@@ -1,18 +1,3 @@
-local SoundService = game:GetService("SoundService")
-local sound = Instance.new("Sound")
-
--- ID звука (можно найти в библиотеке Roblox)
-sound.SoundId = "rbxassetid://1837877085" -- Пример звука "Beep"
-sound.Volume = 1
-sound.Parent = SoundService
-
-sound:Play()
-print("Скрипт загружен и звук воспроизведен!")
-
--- Удаляем звук после проигрывания, чтобы не засорять память
-sound.Stopped:Wait()
-sound:Destroy()
-
 game.StarterGui:SetCore("SendNotification", {
     Title = "LOADING"; -- Заголовок
     Text = "LOAD PATCH"; -- Текст
