@@ -1154,45 +1154,292 @@ end
 
 RunService.RenderStepped:Connect(updateHealth)
 
+-- FINAL FIXED FLY & NOCLIP (XENO)
+local Player = game.Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+
+local flying = false
+local noclip = false
+local flySpeed = 70
+
+-- ИНТЕРФЕЙС
+local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+
+local function createBtn(text, pos)
+    local btn = Instance.new("TextButton", ScreenGui)
+    btn.Size = UDim2.new(0, 120, 0, 40)
+    btn.Position = pos
+    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    btn.Text = text
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextSize = 14
+    Instance.new("UICorner", btn)
+    return btn
+end
+
+local FlyBtn = createBtn("FLY: OFF", UDim2.new(0, 10, 0.5, -45))
+local NoclipBtn = createBtn("NOCLIP: OFF", UDim2.new(0, 10, 0.5, 5))
+
+-- ЛОГИКА NOCLIP (ИСПРАВЛЕНО)
+NoclipBtn.MouseButton1Click:Connect(function()
+    noclip = not noclip
+    NoclipBtn.Text = noclip and "NOCLIP: ON" or "NOCLIP: OFF"
+    NoclipBtn.BackgroundColor3 = noclip and Color3.fromRGB(200, 100, 0) or Color3.fromRGB(30, 30, 30)
+    
+    -- Если выключили - возвращаем коллизию всем частям
+    if not noclip then
+        local char = Player.Character
+        if char then
+            for _, part in pairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = true
+                end
+            end
+        end
+    end
+end)
+
+-- ЛОГИКА FLY (НЕ ПАДАЕТ)
+FlyBtn.MouseButton1Click:Connect(function()
+    flying = not flying
+    FlyBtn.Text = flying and "FLY: ON" or "FLY: OFF"
+    FlyBtn.BackgroundColor3 = flying and Color3.fromRGB(0, 150, 255) or Color3.fromRGB(30, 30, 30)
+    
+    local char = Player.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    
+    if flying and hrp then
+        -- Создаем силовое поле, чтобы не падать
+        local bv = Instance.new("BodyVelocity")
+        bv.Name = "XenoFly"
+        bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+        bv.Velocity = Vector3.new(0, 0, 0)
+        bv.Parent = hrp
+    else
+        if hrp and hrp:FindFirstChild("XenoFly") then
+            hrp.XenoFly:Destroy()
+        end
+        if char and char:FindFirstChild("Humanoid") then
+            char.Humanoid.PlatformStand = false
+        end
+    end
+end)
+
+-- ОБРАБОТКА КАЖДЫЙ КАДР
+RunService.Stepped:Connect(function()
+    local char = Player.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    local hum = char:FindFirstChild("Humanoid")
+
+    -- 1. Ноуклип (всегда работает, пока включен)
+    if noclip then
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+    end
+
+    -- 2. Полет (управление без падения)
+    if flying and hrp and hum then
+        hum.PlatformStand = true
+        local bv = hrp:FindFirstChild("XenoFly")
+        if bv then
+            local camCF = workspace.CurrentCamera.CFrame
+            local dir = Vector3.new(0, 0, 0)
+
+            if UIS:IsKeyDown(Enum.KeyCode.W) then dir = dir + camCF.LookVector end
+            if UIS:IsKeyDown(Enum.KeyCode.S) then dir = dir - camCF.LookVector end
+            if UIS:IsKeyDown(Enum.KeyCode.A) then dir = dir - camCF.RightVector end
+            if UIS:IsKeyDown(Enum.KeyCode.D) then dir = dir + camCF.RightVector end
+            
+            if UIS:IsKeyDown(Enum.KeyCode.Space) then dir = dir + Vector3.new(0, 1, 0) end
+            if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then dir = dir - Vector3.new(0, 1, 0) end
+
+            bv.Velocity = dir * flySpeed
+            hrp.CFrame = CFrame.new(hrp.Position, hrp.Position + camCF.LookVector)
+        end
+    end
+end)
+
+-- SPEED HACK С УВЕДОМЛЕНИЕМ ОБ АНТИЧИТЕ
+local Player = game.Players.LocalPlayer
+local RunService = game:GetService("RunService")
+
+local speedEnabled = false
+local currentSpeed = 100
+
+-- СОЗДАНИЕ ИНТЕРФЕЙСА
+local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+
+-- Главный контейнер
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.new(0, 130, 0, 80)
+MainFrame.Position = UDim2.new(0, 10, 1, -150)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Instance.new("UICorner", MainFrame)
+
+-- Кнопка ВКЛ/ВЫКЛ
+local ToggleBtn = Instance.new("TextButton", MainFrame)
+ToggleBtn.Size = UDim2.new(0, 110, 0, 35)
+ToggleBtn.Position = UDim2.new(0, 10, 0, 10)
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+ToggleBtn.Text = "SPEED: OFF"
+ToggleBtn.TextColor3 = Color3.new(1, 1, 1)
+ToggleBtn.Font = Enum.Font.SourceSansBold
+ToggleBtn.TextSize = 14
+Instance.new("UICorner", ToggleBtn)
+
+-- Поле ввода
+local InputBox = Instance.new("TextBox", MainFrame)
+InputBox.Size = UDim2.new(0, 110, 0, 25)
+InputBox.Position = UDim2.new(0, 10, 0, 50)
+InputBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+InputBox.Text = tostring(currentSpeed)
+InputBox.TextColor3 = Color3.new(1, 1, 1)
+InputBox.Font = Enum.Font.SourceSans
+InputBox.TextSize = 14
+Instance.new("UICorner", InputBox)
+
+-- УВЕДОМЛЕНИЕ (скрыто по умолчанию)
+local WarningLabel = Instance.new("TextLabel", ScreenGui)
+WarningLabel.Size = UDim2.new(0, 250, 0, 60)
+WarningLabel.Position = UDim2.new(0, 150, 1, -140) -- Справа от меню
+WarningLabel.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+WarningLabel.TextColor3 = Color3.new(1, 1, 1)
+WarningLabel.Text = "АККУРАТНО!\nАНТИЧИТ МОЖЕТ ЗАБАНИТЬ!\nРЕКОМЕНДУЕМАЯ СКОРОСТЬ: 50-60"
+WarningLabel.Font = Enum.Font.SourceSansBold
+WarningLabel.TextSize = 14
+WarningLabel.Visible = false
+Instance.new("UICorner", WarningLabel)
+
+-- ЛОГИКА УВЕДОМЛЕНИЯ ПРИ КЛИКЕ
+InputBox.Focused:Connect(function()
+    WarningLabel.Visible = true
+end)
+
+InputBox.FocusLost:Connect(function()
+    local newSpeed = tonumber(InputBox.Text)
+    if newSpeed then
+        currentSpeed = newSpeed
+    else
+        InputBox.Text = tostring(currentSpeed)
+    end
+    -- Скрываем уведомление через 3 секунды после ввода
+    task.delay(3, function()
+        WarningLabel.Visible = false
+    end)
+end)
+
+-- ЛОГИКА ВКЛЮЧЕНИЯ
+ToggleBtn.MouseButton1Click:Connect(function()
+    speedEnabled = not speedEnabled
+    ToggleBtn.Text = speedEnabled and "SPEED: ON" or "SPEED: OFF"
+    ToggleBtn.BackgroundColor3 = speedEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(45, 45, 45)
+    
+    if not speedEnabled then
+        local hum = Player.Character and Player.Character:FindFirstChild("Humanoid")
+        if hum then hum.WalkSpeed = 16 end
+    end
+end)
+
+-- ПОСТОЯННЫЙ ЦИКЛ
+RunService.Stepped:Connect(function()
+    if speedEnabled then
+        local hum = Player.Character and Player.Character:FindFirstChild("Humanoid")
+        if hum then hum.WalkSpeed = currentSpeed end
+    end
+end)
+
+-- DAMAGE INDICATORS + HITSOUND (XENO)
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+-- Настройки
+local INDICATOR_COLOR = Color3.fromRGB(255, 200, 0) -- Оранжево-желтый (лучше видно)
+local HIT_SOUND_ID = "rbxassetid://160432334" -- ID звука попадания
+local VOLUME = 0.5
+
+-- Создание звукового объекта
+local Sound = Instance.new("Sound", game:GetService("SoundService"))
+Sound.SoundId = HIT_SOUND_ID
+Sound.Volume = VOLUME
+
+local function createDamageTag(position, amount)
+    local part = Instance.new("Part")
+    part.Size = Vector3.new(0, 0, 0)
+    part.Transparency = 1
+    part.CanCollide = false
+    part.Anchored = true
+    part.Position = position + Vector3.new(math.random(-1,1), 2, math.random(-1,1))
+    part.Parent = workspace
+
+    local billboard = Instance.new("BillboardGui")
+    billboard.Size = UDim2.new(0, 100, 0, 50)
+    billboard.Adornee = part
+    billboard.AlwaysOnTop = true
+    billboard.Parent = part
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.TextColor3 = INDICATOR_COLOR
+    label.TextStrokeTransparency = 0
+    label.Font = Enum.Font.SourceSansBold
+    label.TextSize = 22
+    label.Text = "-" .. tostring(math.floor(amount))
+    label.Parent = billboard
+
+    task.spawn(function()
+        for i = 1, 30 do
+            part.Position = part.Position + Vector3.new(0, 0.15, 0)
+            label.TextTransparency = i / 30
+            label.TextStrokeTransparency = i / 30
+            RunService.RenderStepped:Wait()
+        end
+        part:Destroy()
+    end)
+end
+
+local function observePlayer(player)
+    if player == LocalPlayer then return end
+    
+    local lastHealth = 100
+    
+    local function connectHum(char)
+        local hum = char:WaitForChild("Humanoid")
+        lastHealth = hum.Health
+        
+        hum.HealthChanged:Connect(function(currentHealth)
+            if currentHealth < lastHealth then
+                local damage = lastHealth - currentHealth
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                
+                -- Проигрываем звук при уроне
+                Sound:Play()
+                
+                if hrp then
+                    createDamageTag(hrp.Position, damage)
+                end
+            end
+            lastHealth = currentHealth
+        end)
+    end
+
+    if player.Character then connectHum(player.Character) end
+    player.CharacterAdded:Connect(connectHum)
+end
+
+for _, player in pairs(Players:GetPlayers()) do
+    observePlayer(player)
+end
+Players.PlayerAdded:Connect(observePlayer)
+
+print("Damage Indicators with Sound Loaded!")
+
 
 Notify("Cheat Active", "Приятной игры с читами от SLAKINA, " .. game.Players.LocalPlayer.Name .. "!")
--- УНИВЕРСАЛЬНЫЙ АНТИ-КЕЙК И БАЙПАС (БЕЗ LOADSTRING)
-local Player = game:GetService("Players").LocalPlayer
-local OldNamecall
-
--- Делаем метатаблицу доступной для редактирования
-local mt = getrawmetatable(game)
-local set_readonly = setreadonly or make_writeable
-local new_cclosure = newcclosure or function(f) return f end
-set_readonly(mt, false)
-
-OldNamecall = hookmetamethod(game, "__namecall", new_cclosure(function(self, ...)
-    local method = getnamecallmethod()
-    local args = {...}
-
-    -- Блокируем попытки кика (Kick)
-    if tostring(method):lower() == "kick" then
-        print("!!! ПОПЫТКА КИКА ЗАБЛОКИРОВАНА !!!")
-        return nil
-    end
-
-    -- Блокируем отправку данных об обнаружении читов (частые названия событий)
-    if self.Name == "Detection" or self.Name == "CheatCheck" or self.Name == "AC" then
-        return nil
-    end
-
-    return OldNamecall(self, unpack(args))
-end))
-
--- Защита WalkSpeed и JumpPower от проверок сервера
-local oldIndex
-oldIndex = hookmetamethod(game, "__index", new_cclosure(function(self, idx)
-    if self:IsA("Humanoid") and (idx == "WalkSpeed" or idx == "JumpPower") then
-        if idx == "WalkSpeed" then return 16 end -- сервер будет думать, что скорость 16
-        if idx == "JumpPower" then return 50 end -- сервер будет думать, что прыжок 50
-    end
-    return oldIndex(self, idx)
-end))
-
-set_readonly(mt, true)
-print("Anti-Ban успешно активирован напрямую!")
