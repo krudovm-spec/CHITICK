@@ -376,3 +376,206 @@ function StartScript()
         end)
     end
 end
+
+--[[
+    FLY + NOCLIP | XENO MOBILE
+    Кнопки: центр левого края экрана
+]]
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+
+local LP = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+-- ===== СОСТОЯНИЯ =====
+local FlyEnabled = false
+local NoclipEnabled = false
+local FlySpeed = 50
+
+local FlyKeys = {
+    Forward = false,
+    Backward = false,
+    Left = false,
+    Right = false,
+    Up = false,
+    Down = false
+}
+
+-- ===== NOCLIP =====
+local function setNoclip(state)
+    local char = LP.Character
+    if not char then return end
+    for _, part in ipairs(char:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = not state
+        end
+    end
+end
+
+LP.CharacterAdded:Connect(function()
+    if NoclipEnabled then
+        task.wait(0.1)
+        setNoclip(true)
+    end
+end)
+
+-- ===== FLY =====
+local function flyLoop()
+    local char = LP.Character
+    if not char then return end
+    local root = char:FindFirstChild("HumanoidRootPart")
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not root or not hum then return end
+    
+    hum.PlatformStand = true
+    
+    local direction = Vector3.zero
+    local camCF = Camera.CFrame
+    
+    if FlyKeys.Forward then direction += camCF.LookVector end
+    if FlyKeys.Backward then direction -= camCF.LookVector end
+    if FlyKeys.Right then direction += camCF.RightVector end
+    if FlyKeys.Left then direction -= camCF.RightVector end
+    
+    if FlyKeys.Up then direction += Vector3.new(0, 1, 0) end
+    if FlyKeys.Down then direction -= Vector3.new(0, 1, 0) end
+    
+    if direction.Magnitude > 0 then
+        root.Velocity = direction.Unit * FlySpeed
+    else
+        root.Velocity = Vector3.zero
+    end
+end
+
+RunService.RenderStepped:Connect(function()
+    if FlyEnabled then flyLoop() end
+    if NoclipEnabled then setNoclip(true) end
+end)
+
+-- ===== ГЛАВНЫЙ GUI (левый край, центр) =====
+local gui = Instance.new("ScreenGui", CoreGui)
+gui.Name = "FlyNoclip"
+gui.IgnoreGuiInset = true
+
+-- Рамка-контейнер (по центру слева)
+local frame = Instance.new("Frame", gui)
+frame.AnchorPoint = Vector2.new(0, 0.5) -- якорь: левый край + центр по вертикали
+frame.Position = UDim2.new(0, 8, 0.5, 0) -- 8px от левого края, 50% высоты
+frame.Size = UDim2.new(0, 44, 0, 120)
+frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+frame.BackgroundTransparency = 0.5
+frame.BorderSizePixel = 0
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
+
+-- ===== КНОПКА FLY =====
+local flyBtn = Instance.new("TextButton", frame)
+flyBtn.Size = UDim2.new(0, 36, 0, 36)
+flyBtn.Position = UDim2.new(0.5, -18, 0, 8)
+flyBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
+flyBtn.Text = "F"
+flyBtn.TextColor3 = Color3.new(1, 1, 1)
+flyBtn.Font = Enum.Font.GothamBold
+flyBtn.TextSize = 18
+flyBtn.BorderSizePixel = 0
+Instance.new("UICorner", flyBtn).CornerRadius = UDim.new(1, 0) -- круг
+
+flyBtn.MouseButton1Click:Connect(function()
+    FlyEnabled = not FlyEnabled
+    if FlyEnabled then
+        flyBtn.BackgroundColor3 = Color3.fromRGB(80, 255, 80)
+        flyBtn.Text = "F✓"
+    else
+        flyBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
+        flyBtn.Text = "F"
+        -- Сбрасываем PlatformStand
+        pcall(function()
+            local char = LP.Character
+            if char then
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                if hum then hum.PlatformStand = false end
+            end
+        end)
+    end
+end)
+
+-- ===== КНОПКА NOCLIP =====
+local noclipBtn = Instance.new("TextButton", frame)
+noclipBtn.Size = UDim2.new(0, 36, 0, 36)
+noclipBtn.Position = UDim2.new(0.5, -18, 0, 52)
+noclipBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
+noclipBtn.Text = "N"
+noclipBtn.TextColor3 = Color3.new(1, 1, 1)
+noclipBtn.Font = Enum.Font.GothamBold
+noclipBtn.TextSize = 18
+noclipBtn.BorderSizePixel = 0
+Instance.new("UICorner", noclipBtn).CornerRadius = UDim.new(1, 0) -- круг
+
+noclipBtn.MouseButton1Click:Connect(function()
+    NoclipEnabled = not NoclipEnabled
+    if NoclipEnabled then
+        noclipBtn.BackgroundColor3 = Color3.fromRGB(80, 255, 80)
+        noclipBtn.Text = "N✓"
+        setNoclip(true)
+    else
+        noclipBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
+        noclipBtn.Text = "N"
+        setNoclip(false)
+    end
+end)
+
+-- ===== КНОПКИ НАПРАВЛЕНИЙ (джойстик FLY) =====
+-- Создаём только если Fly включен (появляются рядом)
+local dirFrame = Instance.new("Frame", gui)
+dirFrame.AnchorPoint = Vector2.new(0, 0.5)
+dirFrame.Position = UDim2.new(0, 60, 0.5, 0) -- справа от главной рамки
+dirFrame.Size = UDim2.new(0, 80, 0, 90)
+dirFrame.BackgroundTransparency = 1
+dirFrame.Visible = false
+
+-- Функция создания кнопки направления
+local function createDirBtn(name, posX, posY, text, key)
+    local btn = Instance.new("TextButton", dirFrame)
+    btn.Size = UDim2.new(0, 28, 0, 28)
+    btn.Position = UDim2.new(0, posX, 0, posY)
+    btn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    btn.BackgroundTransparency = 0.3
+    btn.Text = text
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 14
+    btn.BorderSizePixel = 0
+    btn.Name = name
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+    
+    btn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch then
+            FlyKeys[key] = true
+        end
+    end)
+    btn.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch then
+            FlyKeys[key] = false
+        end
+    end)
+    
+    return btn
+end
+
+createDirBtn("Up", 26, 0, "↑", "Up")
+createDirBtn("Down", 26, 48, "↓", "Down")
+createDirBtn("Left", 0, 24, "←", "Left")
+createDirBtn("Right", 52, 24, "→", "Right")
+
+-- Обновление видимости джойстика
+flyBtn.MouseButton1Click:Connect(function()
+    -- Этот код срабатывает ДО переключения флага
+    -- Поэтому используем task.wait
+    task.wait(0.05)
+    dirFrame.Visible = FlyEnabled
+end)
+
+-- Начальная настройка видимости
+task.wait(0.5)
+dirFrame.Visible = FlyEnabled
