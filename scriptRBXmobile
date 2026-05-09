@@ -1,4 +1,79 @@
 --[[
+    ANTI-KICK для XENO MOBILE
+    Защита от кика другими игроками
+]]
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LP = Players.LocalPlayer
+
+-- ===== МЕТОД 1: Блокировка RemoteEvent =====
+local function blockRemotes()
+    for _, v in ipairs(game:GetDescendants()) do
+        if v:IsA("RemoteEvent") then
+            -- Перехватываем и блокируем попытки кика
+            local oldFireServer = v.FireServer
+            v.FireServer = function(self, player, ...)
+                if player == LP then
+                    return -- Блокируем если цель - мы
+                end
+                return oldFireServer(self, player, ...)
+            end
+        end
+    end
+end
+
+-- ===== МЕТОД 2: Защита RootPart от телепорта =====
+local function protectRoot()
+    local char = LP.Character
+    if not char then return end
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if root then
+        -- Блокируем изменение CFrame другими скриптами
+        root:GetPropertyChangedSignal("CFrame"):Connect(function()
+            local newPos = root.CFrame.Position
+            -- Если нас телепортировали далеко - возвращаем
+            if newPos.Magnitude > 50000 then
+                root.CFrame = root.CFrame -- Отмена
+            end
+        end)
+    end
+end
+
+-- ===== МЕТОД 3: Блокировка Kick =====
+local oldKick = LP.Kick
+LP.Kick = function(self, ...)
+    return -- Ничего не делаем при попытке кика
+end
+
+-- ===== МЕТОД 4: Защита через каждые 5 сек =====
+task.spawn(function()
+    while true do
+        task.wait(5)
+        pcall(function()
+            -- Перезащита на случай очистки
+            LP.Kick = function() end
+            
+            -- Блок всех Remotes
+            for _, v in ipairs(game:GetDescendants()) do
+                if v:IsA("RemoteEvent") and not v.Name:find("Blocked") then
+                    v.Name = v.Name .. "_Blocked"
+                end
+            end
+        end)
+    end
+end)
+
+-- ===== ЗАПУСК =====
+blockRemotes()
+
+LP.CharacterAdded:Connect(function()
+    task.wait(0.5)
+    protectRoot()
+end)
+
+if LP.Character then protectRoot() end
+--[[
     MOBILE-FRIENDLY SCRIPT FOR XENO (FIXED)
 ]]
 
