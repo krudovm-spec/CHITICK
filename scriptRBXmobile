@@ -994,8 +994,10 @@ end
 end)
 
 --[[
+
+--[[
     SETTINGS HUB для XENO MOBILE
-    Тени | FPS | Оптимизация | Анти-АФК | Невидимость | Кик
+    Поле ввода имени для кика
 ]]
 
 local Players = game:GetService("Players")
@@ -1020,22 +1022,16 @@ local function setOptimize(state)
     Lighting.GlobalShadows = not state
     Workspace.StreamingMinRadius = state and 32 or 64
     Workspace.StreamingTargetRadius = state and 64 or 256
-    
     if state then
         for _, obj in ipairs(Workspace:GetDescendants()) do
-            if obj:IsA("Decal") or obj:IsA("Texture") then
-                pcall(function() obj:Destroy() end)
-            end
-            if obj:IsA("ParticleEmitter") or obj:IsA("Trail") then
-                obj.Enabled = false
-            end
+            if obj:IsA("Decal") or obj:IsA("Texture") then pcall(function() obj:Destroy() end) end
+            if obj:IsA("ParticleEmitter") or obj:IsA("Trail") then obj.Enabled = false end
         end
         Lighting.Bloom.Enabled = false
         Lighting.Blur.Enabled = false
         Lighting.ColorCorrection.Enabled = false
         Lighting.SunRays.Enabled = false
         Lighting.DepthOfField.Enabled = false
-        if setfpscap then setfpscap(999) end
     else
         Lighting.Bloom.Enabled = true
         Lighting.ColorCorrection.Enabled = true
@@ -1068,12 +1064,8 @@ LP.CharacterAdded:Connect(function(char)
     if Settings.Invisible then task.wait(0.2); setInvisible(true) end
 end)
 
--- ===== ТЕНИ =====
-local function setShadows(state)
-    Lighting.GlobalShadows = state
-end
+local function setShadows(state) Lighting.GlobalShadows = state end
 
--- ===== АНТИ-АФК =====
 local afkConnection
 local function setAntiAFK(state)
     if state then
@@ -1086,68 +1078,37 @@ local function setAntiAFK(state)
     end
 end
 
--- ===== КИК ИГРОКА =====
-local function kickPlayer(playerName, reason)
-    local player = Players:FindFirstChild(playerName)
-    if player and player ~= LP then
+-- ===== КИК =====
+local function kickPlayer(playerName)
+    local target
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LP and p.Name:lower():find(playerName:lower()) then
+            target = p
+            break
+        end
+    end
+    
+    if target then
         pcall(function()
-            -- Метод 1: через RemoteEvents
             for _, v in ipairs(Workspace:GetDescendants()) do
                 if v:IsA("RemoteEvent") then
-                    pcall(function() v:FireServer(player, reason or "Kicked") end)
+                    pcall(function() v:FireServer(target) end)
                 end
             end
         end)
-        
-        -- Метод 2: через физику
         pcall(function()
-            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                player.Character.HumanoidRootPart.CFrame = CFrame.new(999999, 999999, 999999)
+            if target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                target.Character.HumanoidRootPart.CFrame = CFrame.new(99999, 99999, 99999)
             end
         end)
+        kickFeedback.Text = "Кикнут: " .. target.Name
+        kickFeedback.TextColor3 = Color3.new(0.3, 1, 0.3)
+    else
+        kickFeedback.Text = "Игрок не найден!"
+        kickFeedback.TextColor3 = Color3.new(1, 0.3, 0.3)
     end
-end
-
--- ===== СПИСОК ИГРОКОВ ДЛЯ КИКА =====
-local function showKickMenu()
-    if kickList.Visible then
-        kickList.Visible = false
-        return
-    end
-    
-    -- Очистка старых кнопок
-    for _, v in ipairs(kickList:GetChildren()) do
-        if v:IsA("TextButton") and v.Name ~= "CloseKick" then
-            v:Destroy()
-        end
-    end
-    
-    -- Добавление игроков
-    local y = 14
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= LP then
-            local btn = Instance.new("TextButton", kickList)
-            btn.Size = UDim2.new(1, -10, 0, 28)
-            btn.Position = UDim2.new(0, 5, 0, y)
-            btn.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
-            btn.BackgroundTransparency = 0.2
-            btn.Text = p.Name
-            btn.TextColor3 = Color3.new(1, 1, 1)
-            btn.Font = Enum.Font.GothamMedium
-            btn.TextSize = 11
-            btn.BorderSizePixel = 0
-            Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-            
-            btn.MouseButton1Click:Connect(function()
-                kickPlayer(p.Name)
-                kickList.Visible = false
-            end)
-            
-            y += 32
-        end
-    end
-    
-    kickList.Visible = true
+    task.wait(2)
+    kickFeedback.Text = ""
 end
 
 -- ===== GUI =====
@@ -1155,18 +1116,18 @@ local gui = Instance.new("ScreenGui", CoreGui)
 gui.Name = "SettingsHub"
 gui.IgnoreGuiInset = true
 
--- Меню настроек
+-- Меню
 local menu = Instance.new("Frame", gui)
 menu.AnchorPoint = Vector2.new(1, 0.5)
 menu.Position = UDim2.new(1, -52, 0.5, 0)
-menu.Size = UDim2.new(0, 150, 0, 275)
+menu.Size = UDim2.new(0, 155, 0, 320)
 menu.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 menu.BackgroundTransparency = 0.5
 menu.BorderSizePixel = 0
 menu.Visible = false
 Instance.new("UICorner", menu).CornerRadius = UDim.new(0, 10)
 
--- Кнопка гайка
+-- Гайка
 local gearBtn = Instance.new("TextButton", gui)
 gearBtn.AnchorPoint = Vector2.new(1, 0.5)
 gearBtn.Position = UDim2.new(1, -8, 0.5, 0)
@@ -1180,10 +1141,9 @@ Instance.new("UICorner", gearBtn).CornerRadius = UDim.new(1, 0)
 
 gearBtn.MouseButton1Click:Connect(function()
     menu.Visible = not menu.Visible
-    if kickList.Visible then kickList.Visible = false end
 end)
 
--- ===== ПЕРЕКЛЮЧАТЕЛИ =====
+-- Переключатели
 local function createToggle(parent, name, yPos, default, callback)
     local toggle = Instance.new("TextButton", parent)
     toggle.Size = UDim2.new(1, -16, 0, 32)
@@ -1217,74 +1177,79 @@ title.Font = Enum.Font.GothamBold
 title.TextSize = 12
 title.BackgroundTransparency = 1
 
-createToggle(menu, "Тени", 28, Settings.Shadows, function(state)
-    Settings.Shadows = state; setShadows(state)
-end)
+createToggle(menu, "Тени", 28, Settings.Shadows, function(s) Settings.Shadows = s; setShadows(s) end)
 
 local fpsLabel
-createToggle(menu, "FPS", 62, Settings.FPS, function(state)
-    Settings.FPS = state
-    if fpsLabel then fpsLabel.Visible = state end
+createToggle(menu, "FPS", 62, Settings.FPS, function(s)
+    Settings.FPS = s
+    if fpsLabel then fpsLabel.Visible = s end
 end)
 
-createToggle(menu, "ФПС БУСТ", 96, Settings.Optimize, function(state)
-    Settings.Optimize = state; setOptimize(state)
-end)
+createToggle(menu, "ФПС БУСТ", 96, Settings.Optimize, function(s) Settings.Optimize = s; setOptimize(s) end)
+createToggle(menu, "Анти-АФК", 130, Settings.AntiAFK, function(s) Settings.AntiAFK = s; setAntiAFK(s) end)
+createToggle(menu, "Невидимость", 164, Settings.Invisible, function(s) Settings.Invisible = s; setInvisible(s) end)
 
-createToggle(menu, "Анти-АФК", 130, Settings.AntiAFK, function(state)
-    Settings.AntiAFK = state; setAntiAFK(state)
-end)
+-- Разделитель
+local divider = Instance.new("Frame", menu)
+divider.Size = UDim2.new(1, -16, 0, 1)
+divider.Position = UDim2.new(0, 8, 0, 202)
+divider.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+divider.BorderSizePixel = 0
 
-createToggle(menu, "Невидимость", 164, Settings.Invisible, function(state)
-    Settings.Invisible = state; setInvisible(state)
-end)
+-- Заголовок КИК
+local kickTitle = Instance.new("TextLabel", menu)
+kickTitle.Size = UDim2.new(1, 0, 0, 18)
+kickTitle.Position = UDim2.new(0, 0, 0, 208)
+kickTitle.Text = "КИК ИГРОКА"
+kickTitle.TextColor3 = Color3.new(1, 0.3, 0.3)
+kickTitle.Font = Enum.Font.GothamBold
+kickTitle.TextSize = 11
+kickTitle.BackgroundTransparency = 1
+
+-- Поле ввода имени
+local kickInput = Instance.new("TextBox", menu)
+kickInput.Size = UDim2.new(1, -16, 0, 32)
+kickInput.Position = UDim2.new(0, 8, 0, 228)
+kickInput.PlaceholderText = "Имя игрока..."
+kickInput.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+kickInput.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+kickInput.TextColor3 = Color3.new(1, 1, 1)
+kickInput.Font = Enum.Font.GothamMedium
+kickInput.TextSize = 12
+kickInput.Text = ""
+kickInput.BorderSizePixel = 0
+Instance.new("UICorner", kickInput).CornerRadius = UDim.new(0, 6)
 
 -- Кнопка КИК
 local kickBtn = Instance.new("TextButton", menu)
 kickBtn.Size = UDim2.new(1, -16, 0, 32)
-kickBtn.Position = UDim2.new(0, 8, 0, 200)
+kickBtn.Position = UDim2.new(0, 8, 0, 266)
 kickBtn.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
-kickBtn.Text = "   КИК ИГРОКА"
+kickBtn.Text = "КИКНУТЬ"
 kickBtn.TextColor3 = Color3.new(1, 1, 1)
 kickBtn.Font = Enum.Font.GothamBold
-kickBtn.TextSize = 11
-kickBtn.TextXAlignment = Enum.TextXAlignment.Left
+kickBtn.TextSize = 12
 kickBtn.BorderSizePixel = 0
 Instance.new("UICorner", kickBtn).CornerRadius = UDim.new(0, 6)
 
 kickBtn.MouseButton1Click:Connect(function()
-    showKickMenu()
+    if kickInput.Text ~= "" then
+        kickPlayer(kickInput.Text)
+        kickInput.Text = ""
+    end
 end)
 
--- Список игроков для кика
-local kickList = Instance.new("Frame", gui)
-kickList.AnchorPoint = Vector2.new(1, 0.5)
-kickList.Position = UDim2.new(1, -210, 0.5, 0)
-kickList.Size = UDim2.new(0, 150, 0, 200)
-kickList.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-kickList.BackgroundTransparency = 0.5
-kickList.BorderSizePixel = 0
-kickList.Visible = false
-Instance.new("UICorner", kickList).CornerRadius = UDim.new(0, 10)
+-- Обратная связь
+local kickFeedback = Instance.new("TextLabel", menu)
+kickFeedback.Size = UDim2.new(1, 0, 0, 16)
+kickFeedback.Position = UDim2.new(0, 0, 0, 300)
+kickFeedback.Text = ""
+kickFeedback.TextColor3 = Color3.new(1, 1, 1)
+kickFeedback.Font = Enum.Font.GothamMedium
+kickFeedback.TextSize = 10
+kickFeedback.BackgroundTransparency = 1
 
--- Кнопка закрыть список
-local closeKick = Instance.new("TextButton", kickList)
-closeKick.Name = "CloseKick"
-closeKick.Size = UDim2.new(1, -10, 0, 28)
-closeKick.Position = UDim2.new(0, 5, 0, 165)
-closeKick.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-closeKick.Text = "ЗАКРЫТЬ"
-closeKick.TextColor3 = Color3.new(1, 1, 1)
-closeKick.Font = Enum.Font.GothamBold
-closeKick.TextSize = 11
-closeKick.BorderSizePixel = 0
-Instance.new("UICorner", closeKick).CornerRadius = UDim.new(0, 6)
-
-closeKick.MouseButton1Click:Connect(function()
-    kickList.Visible = false
-end)
-
--- ===== СЧЁТЧИК FPS =====
+-- ===== FPS =====
 fpsLabel = Instance.new("TextLabel", gui)
 fpsLabel.AnchorPoint = Vector2.new(0, 0)
 fpsLabel.Position = UDim2.new(0, 8, 0, 8)
@@ -1299,13 +1264,9 @@ fpsLabel.BorderSizePixel = 0
 fpsLabel.Visible = Settings.FPS
 Instance.new("UICorner", fpsLabel).CornerRadius = UDim.new(0, 6)
 
-local frameCount = 0
-local elapsed = 0
-local currentFPS = 0
-
+local frameCount, elapsed, currentFPS = 0, 0, 0
 RunService.RenderStepped:Connect(function(delta)
-    frameCount += 1
-    elapsed += delta
+    frameCount += 1; elapsed += delta
     if elapsed >= 0.5 then
         currentFPS = math.floor(frameCount / elapsed)
         frameCount = 0; elapsed = 0
