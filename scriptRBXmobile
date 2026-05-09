@@ -1281,3 +1281,73 @@ end)
 
 setShadows(Settings.Shadows)
 if Settings.AntiAFK then setAntiAFK(true) end
+--[[
+    TRACER НАПРАВЛЕНИЯ ВЗГЛЯДА для XENO MOBILE
+    Показывает куда смотрит каждый игрок
+]]
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local LP = Players.LocalPlayer
+
+-- ===== НАСТРОЙКИ =====
+local LookLineLength = 15 -- Длина линии взгляда в студиях
+local LookLineColor = Color3.new(0, 1, 1) -- Голубой цвет
+local LookLineThickness = 1.5
+local LookLineTransparency = 0.6
+
+-- ===== ТРАССЕРЫ ВЗГЛЯДА =====
+local lookLines = {}
+
+local function createLookTracer(player)
+    local line = Drawing.new("Line")
+    line.Color = LookLineColor
+    line.Thickness = LookLineThickness
+    line.Transparency = LookLineTransparency
+    line.Visible = false
+    lookLines[player] = line
+    
+    RunService.RenderStepped:Connect(function()
+        local char = player.Character
+        local head = char and char:FindFirstChild("Head")
+        
+        if head and player ~= LP then
+            local headPos = head.Position
+            local lookDirection = head.CFrame.LookVector
+            
+            -- Точка куда смотрит игрок
+            local lookTarget = headPos + (lookDirection * LookLineLength)
+            
+            -- Конвертируем в экранные координаты
+            local screenHead, visHead = Camera:WorldToViewportPoint(headPos)
+            local screenTarget, visTarget = Camera:WorldToViewportPoint(lookTarget)
+            
+            if visHead and visTarget then
+                line.From = Vector2.new(screenHead.X, screenHead.Y)
+                line.To = Vector2.new(screenTarget.X, screenTarget.Y)
+                line.Visible = true
+            else
+                line.Visible = false
+            end
+        else
+            line.Visible = false
+        end
+    end)
+end
+
+-- ===== ДОБАВЛЕНИЕ ИГРОКОВ =====
+for _, p in ipairs(Players:GetPlayers()) do
+    if p ~= LP then createLookTracer(p) end
+end
+
+Players.PlayerAdded:Connect(function(p)
+    if p ~= LP then createLookTracer(p) end
+end)
+
+Players.PlayerRemoving:Connect(function(p)
+    if lookLines[p] then
+        lookLines[p]:Remove()
+        lookLines[p] = nil
+    end
+end)
