@@ -1,6 +1,5 @@
 --[[
-    MOBILE-FRIENDLY SCRIPT FOR XENO
-    Минимальный GUI, оптимизировано для телефона
+    MOBILE-FRIENDLY SCRIPT FOR XENO (FIXED)
 ]]
 
 local Services = {
@@ -15,66 +14,64 @@ local Services = {
 local LP = Services.Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- ========================================
 -- НАСТРОЙКИ
--- ========================================
 local CORRECT_KEY = "FREE_SLAKINKOD"
 local KEY_LINK = "https://t.me/HDVCHIKpublic/27"
 
--- Функционал вкл/выкл
 local Settings = {
-    ESP = true,            -- Подсветка врагов
-    AIMBOT = true,         -- Аим на кнопку
-    KILL_AURA = true,      -- Удар мечом по радиусу
-    BIG_HEADS = true,      -- Большие головы
-    DEATH_MARKERS = true   -- Метки смерти
+    ESP = true,
+    AIMBOT = true,
+    KILL_AURA = true,
+    BIG_HEADS = true,
+    DEATH_MARKERS = true
 }
 
-local AimRadius = 150   -- Радиус аима в пикселях
-local KillAuraRange = 20 -- Дальность Kill Aura
-local HeadSize = 8       -- Размер голов
+local AimRadius = 150
+local KillAuraRange = 20
+local HeadSize = 8
+
+-- Флаг авторизации
+local isAuthenticated = false
 
 -- ========================================
--- АВТОРИЗАЦИЯ (КОМПАКТНЫЙ GUI)
+-- GUI
 -- ========================================
 local screenGui = Instance.new("ScreenGui", Services.CoreGui)
 screenGui.IgnoreGuiInset = true
 screenGui.ResetOnSpawn = false
+screenGui.Name = "LockScreen"
 
 local blur = Instance.new("BlurEffect", game:GetService("Lighting"))
 blur.Size = 15
 
--- Главный фрейм
 local mainFrame = Instance.new("Frame", screenGui)
 mainFrame.Size = UDim2.new(1, 0, 1, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(5, 5, 5)
 mainFrame.BorderSizePixel = 0
 
--- Компактное окно логина
 local loginBox = Instance.new("Frame", mainFrame)
 loginBox.AnchorPoint = Vector2.new(0.5, 0.5)
 loginBox.Position = UDim2.new(0.5, 0, 0.4, 0)
-loginBox.Size = UDim2.new(0.85, 0, 0, 180) -- Компактный размер
+loginBox.Size = UDim2.new(0.85, 0, 0, 190)
 loginBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 loginBox.BorderSizePixel = 0
 Instance.new("UICorner", loginBox).CornerRadius = UDim.new(0, 12)
 
--- Заголовок
+-- Заголовок (без HTML тегов!)
 local title = Instance.new("TextLabel", loginBox)
 title.Size = UDim2.new(1, -20, 0, 30)
 title.Position = UDim2.new(0, 10, 0, 10)
-title.Text = "<b>🔐 ENTER KEY</b>"
+title.Text = "ENTER KEY"
 title.TextColor3 = Color3.new(1, 1, 1)
 title.Font = Enum.Font.GothamBold
 title.TextSize = 16
 title.BackgroundTransparency = 1
 title.TextXAlignment = Enum.TextXAlignment.Left
 
--- Поле ввода
 local keyInput = Instance.new("TextBox", loginBox)
 keyInput.Size = UDim2.new(1, -20, 0, 40)
 keyInput.Position = UDim2.new(0, 10, 0, 45)
-keyInput.PlaceholderText = "Ключ..."
+keyInput.PlaceholderText = "Key..."
 keyInput.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
 keyInput.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 keyInput.TextColor3 = Color3.new(1, 1, 1)
@@ -83,63 +80,67 @@ keyInput.TextSize = 14
 keyInput.ClearTextOnFocus = false
 Instance.new("UICorner", keyInput).CornerRadius = UDim.new(0, 8)
 
--- Кнопка активации
+-- Кнопка АКТИВАЦИИ (чистый текст)
 local activateBtn = Instance.new("TextButton", loginBox)
 activateBtn.Size = UDim2.new(1, -20, 0, 40)
 activateBtn.Position = UDim2.new(0, 10, 0, 95)
 activateBtn.BackgroundColor3 = Color3.fromRGB(0, 130, 255)
-activateBtn.Text = "<b>ACTIVATE</b>"
+activateBtn.Text = "ACTIVATE"
 activateBtn.TextColor3 = Color3.new(1, 1, 1)
 activateBtn.Font = Enum.Font.GothamBold
 activateBtn.TextSize = 14
 Instance.new("UICorner", activateBtn).CornerRadius = UDim.new(0, 8)
 
--- Кнопка получить ключ (компактная)
 local getKeyBtn = Instance.new("TextButton", loginBox)
 getKeyBtn.Size = UDim2.new(1, -20, 0, 30)
-getKeyBtn.Position = UDim2.new(0, 10, 0, 142)
+getKeyBtn.Position = UDim2.new(0, 10, 0, 145)
 getKeyBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-getKeyBtn.Text = "🔑 GET KEY"
+getKeyBtn.Text = "GET KEY"
 getKeyBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 getKeyBtn.Font = Enum.Font.GothamMedium
 getKeyBtn.TextSize = 12
 Instance.new("UICorner", getKeyBtn).CornerRadius = UDim.new(0, 8)
 
--- Счетчик попыток (компактный)
 local attempts = 0
-local statusLabel = Instance.new("TextLabel", loginBox)
-statusLabel.Size = UDim2.new(1, -20, 0, 0) -- Скрыт по умолчанию
-statusLabel.Position = UDim2.new(0, 10, 0, 150)
-statusLabel.Text = ""
-statusLabel.TextColor3 = Color3.new(1, 0.3, 0.3)
-statusLabel.Font = Enum.Font.GothamMedium
-statusLabel.TextSize = 11
-statusLabel.BackgroundTransparency = 1
 
--- Логика
 getKeyBtn.MouseButton1Click:Connect(function()
     if setclipboard then 
-        setclipboard(KEY_LINK) 
-        getKeyBtn.Text = "✅ COPIED!"
+        setclipboard(KEY_LINK)
+        getKeyBtn.Text = "COPIED!"
         getKeyBtn.TextColor3 = Color3.new(0.3, 1, 0.3)
         task.wait(1.5)
-        getKeyBtn.Text = "🔑 GET KEY"
+        getKeyBtn.Text = "GET KEY"
         getKeyBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
     end
 end)
 
+-- ИСПРАВЛЕНО: чистая логика активации
 activateBtn.MouseButton1Click:Connect(function()
-    if keyInput.Text == CORRECT_KEY then
+    local inputText = keyInput.Text
+    -- Убираем пробелы по краям на всякий случай
+    inputText = inputText:gsub("^%s+", ""):gsub("%s+$", "")
+    
+    if inputText == CORRECT_KEY then
         -- Успех
-        activateBtn.Text = "✅ SUCCESS"
+        isAuthenticated = true
+        activateBtn.Text = "SUCCESS"
         activateBtn.BackgroundColor3 = Color3.new(0, 0.8, 0)
         
-        task.wait(0.5)
+        -- Сразу разблокируем движение
+        pcall(function()
+            local char = LP.Character
+            if char then
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                if hum then hum.WalkSpeed = 16 end
+            end
+        end)
         
-        -- Плавное скрытие
-        Services.TweenService:Create(blur, TweenInfo.new(0.8), {Size = 0}):Play()
-        local fadeOut = Services.TweenService:Create(mainFrame, TweenInfo.new(0.8), {BackgroundTransparency = 1})
+        task.wait(0.8)
+        
+        -- Удаляем GUI
+        local fadeOut = Services.TweenService:Create(mainFrame, TweenInfo.new(0.5), {BackgroundTransparency = 1})
         fadeOut:Play()
+        Services.TweenService:Create(blur, TweenInfo.new(0.5), {Size = 0}):Play()
         
         fadeOut.Completed:Connect(function()
             blur:Destroy()
@@ -149,23 +150,24 @@ activateBtn.MouseButton1Click:Connect(function()
     else
         attempts += 1
         if attempts >= 3 then
-            LP:Kick("❌ Неверный ключ! Доступ заблокирован.")
+            LP:Kick("Wrong key 3 times. Access blocked!")
+            return
         end
-        activateBtn.Text = "❌ WRONG ("..attempts.."/3)"
+        activateBtn.Text = "WRONG ("..attempts.."/3)"
         activateBtn.BackgroundColor3 = Color3.new(0.8, 0, 0)
         
-        task.wait(1.5)
-        activateBtn.Text = "<b>ACTIVATE</b>"
+        task.wait(2)
+        activateBtn.Text = "ACTIVATE"
         activateBtn.BackgroundColor3 = Color3.fromRGB(0, 130, 255)
     end
 end)
 
--- ========================================
--- БЛОКИРОВКА ДВИЖЕНИЯ ДО АВТОРИЗАЦИИ
--- ========================================
+-- ИСПРАВЛЕНО: блокировка только если НЕ авторизован
 Services.RunService.Stepped:Connect(function()
+    if isAuthenticated then return end -- Пропускаем если уже авторизован
+    
     local char = LP.Character
-    if char and not screenGui:FindFirstChild("Authenticated") then
+    if char then
         local hum = char:FindFirstChildOfClass("Humanoid")
         if hum then hum.WalkSpeed = 0 end
     end
@@ -175,14 +177,13 @@ end)
 -- ОСНОВНЫЕ ФУНКЦИИ
 -- ========================================
 function StartScript()
-    screenGui.Name = "Authenticated" -- Маркер авторизации
-    
+    -- Разблокируем движение окончательно
     local char = LP.Character or LP.CharacterAdded:Wait()
     local hum = char:WaitForChild("Humanoid")
     hum.WalkSpeed = 16
     hum.JumpPower = 50
     
-    -- ====== ESP (простая подсветка) ======
+    -- ESP
     if Settings.ESP then
         local function addESP(player)
             if player == LP then return end
@@ -201,7 +202,7 @@ function StartScript()
         Services.Players.PlayerAdded:Connect(addESP)
     end
     
-    -- ====== ПИНГ ИНДИКАТОР (компактный) ======
+    -- Пинг
     local pingGui = Instance.new("ScreenGui", Services.CoreGui)
     local pingLabel = Instance.new("TextLabel", pingGui)
     pingLabel.Size = UDim2.new(0, 90, 0, 22)
@@ -216,29 +217,27 @@ function StartScript()
     
     Services.RunService.RenderStepped:Connect(function()
         local ping = math.floor(Services.Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
-        pingLabel.Text = "📡 " .. ping .. "ms"
+        pingLabel.Text = "Ping " .. ping .. "ms"
         if ping < 80 then pingLabel.TextColor3 = Color3.new(0.3, 1, 0.3)
         elseif ping < 150 then pingLabel.TextColor3 = Color3.new(1, 0.8, 0)
         else pingLabel.TextColor3 = Color3.new(1, 0.3, 0.3) end
     end)
     
-    -- ====== АИМБОТ (по удержанию экрана) ======
+    -- Аимбот (кнопка для пальца)
     if Settings.AIMBOT then
         local isAiming = false
         
-        -- Создаем кнопку для аима на телефоне
-        local aimButton = Instance.new("TextButton", Services.CoreGui:WaitForChild("Authenticated") or screenGui)
+        local aimButton = Instance.new("TextButton", screenGui)
         aimButton.Size = UDim2.new(0, 50, 0, 50)
         aimButton.Position = UDim2.new(0.85, -25, 0.75, -25)
         aimButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         aimButton.BackgroundTransparency = 0.85
-        aimButton.Text = "🎯"
-        aimButton.TextSize = 20
+        aimButton.Text = "AIM"
+        aimButton.TextSize = 14
         aimButton.BorderSizePixel = 0
         aimButton.Active = true
         Instance.new("UICorner", aimButton).CornerRadius = UDim.new(1, 0)
         
-        -- FOV круг
         local fovCircle = Drawing.new("Circle")
         fovCircle.Radius = AimRadius
         fovCircle.Thickness = 1
@@ -300,7 +299,7 @@ function StartScript()
         end)
     end
     
-    -- ====== KILL AURA ======
+    -- Kill Aura
     if Settings.KILL_AURA then
         Services.RunService.Stepped:Connect(function()
             local char = LP.Character
@@ -326,7 +325,7 @@ function StartScript()
         end)
     end
     
-    -- ====== БОЛЬШИЕ ГОЛОВЫ ======
+    -- Big Heads
     if Settings.BIG_HEADS then
         Services.RunService.RenderStepped:Connect(function()
             for _, p in ipairs(Services.Players:GetPlayers()) do
@@ -342,7 +341,7 @@ function StartScript()
         end)
     end
     
-    -- ====== МЕТКИ СМЕРТИ ======
+    -- Death Markers
     if Settings.DEATH_MARKERS then
         local function addDeathMarker(character)
             local root = character:WaitForChild("HumanoidRootPart", 5)
