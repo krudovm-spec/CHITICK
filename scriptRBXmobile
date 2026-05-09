@@ -898,3 +898,94 @@ end)
 -- Стартовое уведомление
 task.wait(1)
 notify("Спидхак загружен", "Безопасная скорость: 50-60", 4)
+
+--[[
+    TRACER для XENO MOBILE
+    Лучи от центра экрана к врагам
+]]
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local LP = Players.LocalPlayer
+
+-- ===== НАСТРОЙКИ =====
+local TracerColor = Color3.new(1, 1, 1) -- Белый цвет лучей
+local TracerThickness = 1
+local TracerTransparency = 0.5
+local MaxDistance = 9999 -- Максимальная дальность луча
+
+-- ===== СОЗДАНИЕ TRACER'ОВ =====
+local tracers = {} -- {player = {line = Drawing}}
+
+local function createTracer(player)
+    local line = Drawing.new("Line")
+    line.Color = TracerColor
+    line.Thickness = TracerThickness
+    line.Transparency = TracerTransparency
+    line.Visible = true
+    
+    tracers[player] = line
+    
+    -- Обновление позиций
+    local function update()
+        local char = player.Character
+        local root = char and char:FindFirstChild("HumanoidRootPart")
+        
+        if root and player ~= LP then
+            local screenPos, onScreen = Camera:WorldToViewportPoint(root.Position)
+            local screenSize = Camera.ViewportSize
+            local center = Vector2.new(screenSize.X / 2, screenSize.Y / 2)
+            
+            if onScreen then
+                line.From = center
+                line.To = Vector2.new(screenPos.X, screenPos.Y)
+                line.Visible = true
+            else
+                -- Если враг за экраном - луч до края экрана
+                local direction = Vector2.new(screenPos.X - center.X, screenPos.Y - center.Y)
+                if direction.Magnitude > 0 then
+                    direction = direction.Unit
+                    line.From = center
+                    line.To = center + direction * screenSize.Magnitude
+                    line.Visible = true
+                else
+                    line.Visible = false
+                end
+            end
+        else
+            line.Visible = false
+        end
+    end
+    
+    RunService.RenderStepped:Connect(update)
+    
+    -- Удаление при выходе игрока
+    player.AncestryChanged:Connect(function()
+        if not player:IsDescendantOf(Players) then
+            line:Remove()
+            tracers[player] = nil
+        end
+    end)
+end
+
+-- ===== ДОБАВЛЕНИЕ ВСЕХ ИГРОКОВ =====
+for _, player in ipairs(Players:GetPlayers()) do
+    if player ~= LP then
+        createTracer(player)
+    end
+end
+
+Players.PlayerAdded:Connect(function(player)
+    if player ~= LP then
+        createTracer(player)
+    end
+end)
+
+-- Удаление при выходе
+Players.PlayerRemoving:Connect(function(player)
+    if tracers[player] then
+        tracers[player]:Remove()
+        tracers[player] = nil
+    end
+end)
