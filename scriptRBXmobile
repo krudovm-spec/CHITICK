@@ -918,6 +918,111 @@ Players.PlayerRemoving:Connect(function(p)
     if tracers[p] then tracers[p]:Remove(); tracers[p] = nil end
 end)
 --[[
+    ESP для XENO MOBILE
+    Белый квадрат + Имя + HP над игроком
+]]
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local LP = Players.LocalPlayer
+
+-- ===== НАСТРОЙКИ =====
+local BoxColor = Color3.new(1, 1, 1) -- Белый
+local BoxThickness = 2
+local ShowHP = true
+local ShowName = true
+
+-- ===== ESP =====
+local function createESP(player)
+    local function setup(char)
+        local head = char:WaitForChild("Head", 10)
+        local hum = char:WaitForChild("Humanoid", 10)
+        local root = char:WaitForChild("HumanoidRootPart", 10)
+        if not head or not hum or not root then return end
+        
+        -- BillboardGui для квадрата и текста
+        local bill = Instance.new("BillboardGui", head)
+        bill.Name = "ESP"
+        bill.Size = UDim2.new(0, 120, 0, 80)
+        bill.StudsOffset = Vector3.new(0, 2.5, 0)
+        bill.AlwaysOnTop = true
+        
+        -- Квадрат (рамка)
+        local box = Instance.new("Frame", bill)
+        box.Size = UDim2.new(1, 0, 0, 4)
+        box.Position = UDim2.new(0, 0, 0, 0)
+        box.BackgroundColor3 = BoxColor
+        box.BorderSizePixel = 0
+        
+        local box2 = Instance.new("Frame", bill)
+        box2.Size = UDim2.new(1, 0, 0, 4)
+        box2.Position = UDim2.new(0, 0, 0, 1)
+        box2.BackgroundColor3 = BoxColor
+        box2.BorderSizePixel = 0
+        
+        local box3 = Instance.new("Frame", bill)
+        box3.Size = UDim2.new(0, 4, 1, 0)
+        box3.Position = UDim2.new(0, 0, 0, 0)
+        box3.BackgroundColor3 = BoxColor
+        box3.BorderSizePixel = 0
+        
+        local box4 = Instance.new("Frame", bill)
+        box4.Size = UDim2.new(0, 4, 1, 0)
+        box4.Position = UDim2.new(1, -4, 0, 0)
+        box4.BackgroundColor3 = BoxColor
+        box4.BorderSizePixel = 0
+        
+        -- Имя
+        local nameLabel = Instance.new("TextLabel", bill)
+        nameLabel.Size = UDim2.new(1, 0, 0, 20)
+        nameLabel.Position = UDim2.new(0, 0, 0, -24)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Text = player.Name
+        nameLabel.TextColor3 = Color3.new(1, 1, 1)
+        nameLabel.Font = Enum.Font.GothamBold
+        nameLabel.TextSize = 13
+        nameLabel.TextStrokeTransparency = 0.5
+        
+        -- HP
+        local hpLabel = Instance.new("TextLabel", bill)
+        hpLabel.Size = UDim2.new(1, 0, 0, 16)
+        hpLabel.Position = UDim2.new(0, 0, 1, 4)
+        hpLabel.BackgroundTransparency = 1
+        hpLabel.Text = math.floor(hum.Health) .. " HP"
+        hpLabel.TextColor3 = Color3.new(1, 1, 1)
+        hpLabel.Font = Enum.Font.GothamMedium
+        hpLabel.TextSize = 11
+        hpLabel.TextStrokeTransparency = 0.5
+        
+        -- Обновление HP
+        hum.HealthChanged:Connect(function(health)
+            hpLabel.Text = math.floor(health) .. " HP"
+            hpLabel.TextColor3 = health > 50 and Color3.new(0.3, 1, 0.3) or Color3.new(1, 0.3, 0.3)
+        end)
+        
+        -- Обновление позиции
+        RunService.RenderStepped:Connect(function()
+            if not char:IsDescendantOf(game) then
+                bill:Destroy()
+                return
+            end
+            bill.Enabled = true
+        end)
+    end
+    
+    if player.Character then setup(player.Character) end
+    player.CharacterAdded:Connect(setup)
+end
+
+-- Все игроки
+for _, p in ipairs(Players:GetPlayers()) do
+    if p ~= LP then createESP(p) end
+end
+Players.PlayerAdded:Connect(function(p)
+    if p ~= LP then createESP(p) end
+end)
+--[[
     TRACER для XENO MOBILE
     Лучи от нижней части экрана к врагам
 ]]
@@ -1434,109 +1539,4 @@ Players.PlayerAdded:Connect(function(p)
             addDeathMarker(p, char)
         end
     end)
-end)
---[[
-    ESP для XENO MOBILE
-    Белый квадрат + Имя + HP над игроком
-]]
-
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local Camera = workspace.CurrentCamera
-local LP = Players.LocalPlayer
-
--- ===== НАСТРОЙКИ =====
-local BoxColor = Color3.new(1, 1, 1) -- Белый
-local BoxThickness = 2
-local ShowHP = true
-local ShowName = true
-
--- ===== ESP =====
-local function createESP(player)
-    local function setup(char)
-        local head = char:WaitForChild("Head", 10)
-        local hum = char:WaitForChild("Humanoid", 10)
-        local root = char:WaitForChild("HumanoidRootPart", 10)
-        if not head or not hum or not root then return end
-        
-        -- BillboardGui для квадрата и текста
-        local bill = Instance.new("BillboardGui", head)
-        bill.Name = "ESP"
-        bill.Size = UDim2.new(0, 120, 0, 80)
-        bill.StudsOffset = Vector3.new(0, 2.5, 0)
-        bill.AlwaysOnTop = true
-        
-        -- Квадрат (рамка)
-        local box = Instance.new("Frame", bill)
-        box.Size = UDim2.new(1, 0, 0, 4)
-        box.Position = UDim2.new(0, 0, 0, 0)
-        box.BackgroundColor3 = BoxColor
-        box.BorderSizePixel = 0
-        
-        local box2 = Instance.new("Frame", bill)
-        box2.Size = UDim2.new(1, 0, 0, 4)
-        box2.Position = UDim2.new(0, 0, 0, 1)
-        box2.BackgroundColor3 = BoxColor
-        box2.BorderSizePixel = 0
-        
-        local box3 = Instance.new("Frame", bill)
-        box3.Size = UDim2.new(0, 4, 1, 0)
-        box3.Position = UDim2.new(0, 0, 0, 0)
-        box3.BackgroundColor3 = BoxColor
-        box3.BorderSizePixel = 0
-        
-        local box4 = Instance.new("Frame", bill)
-        box4.Size = UDim2.new(0, 4, 1, 0)
-        box4.Position = UDim2.new(1, -4, 0, 0)
-        box4.BackgroundColor3 = BoxColor
-        box4.BorderSizePixel = 0
-        
-        -- Имя
-        local nameLabel = Instance.new("TextLabel", bill)
-        nameLabel.Size = UDim2.new(1, 0, 0, 20)
-        nameLabel.Position = UDim2.new(0, 0, 0, -24)
-        nameLabel.BackgroundTransparency = 1
-        nameLabel.Text = player.Name
-        nameLabel.TextColor3 = Color3.new(1, 1, 1)
-        nameLabel.Font = Enum.Font.GothamBold
-        nameLabel.TextSize = 13
-        nameLabel.TextStrokeTransparency = 0.5
-        
-        -- HP
-        local hpLabel = Instance.new("TextLabel", bill)
-        hpLabel.Size = UDim2.new(1, 0, 0, 16)
-        hpLabel.Position = UDim2.new(0, 0, 1, 4)
-        hpLabel.BackgroundTransparency = 1
-        hpLabel.Text = math.floor(hum.Health) .. " HP"
-        hpLabel.TextColor3 = Color3.new(1, 1, 1)
-        hpLabel.Font = Enum.Font.GothamMedium
-        hpLabel.TextSize = 11
-        hpLabel.TextStrokeTransparency = 0.5
-        
-        -- Обновление HP
-        hum.HealthChanged:Connect(function(health)
-            hpLabel.Text = math.floor(health) .. " HP"
-            hpLabel.TextColor3 = health > 50 and Color3.new(0.3, 1, 0.3) or Color3.new(1, 0.3, 0.3)
-        end)
-        
-        -- Обновление позиции
-        RunService.RenderStepped:Connect(function()
-            if not char:IsDescendantOf(game) then
-                bill:Destroy()
-                return
-            end
-            bill.Enabled = true
-        end)
-    end
-    
-    if player.Character then setup(player.Character) end
-    player.CharacterAdded:Connect(setup)
-end
-
--- Все игроки
-for _, p in ipairs(Players:GetPlayers()) do
-    if p ~= LP then createESP(p) end
-end
-Players.PlayerAdded:Connect(function(p)
-    if p ~= LP then createESP(p) end
 end)
