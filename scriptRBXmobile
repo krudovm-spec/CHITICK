@@ -615,3 +615,286 @@ end)
 
 task.wait(0.5)
 dirFrame.Visible = FlyEnabled
+
+--[[
+    SPEEDHACK для XENO MOBILE
+    GUI: левый нижний угол
+    С предупреждениями об античите
+]]
+
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+local StarterGui = game:GetService("StarterGui")
+local LP = Players.LocalPlayer
+
+-- ===== НАСТРОЙКИ =====
+local DefaultSpeed = 50
+local MinSpeed = 16
+local MaxSpeed = 500
+local StepSize = 5
+local SafeSpeed = 60 -- Максимальная безопасная скорость
+
+-- ===== ПЕРЕМЕННЫЕ =====
+local SpeedHackEnabled = false
+local CurrentSpeed = DefaultSpeed
+local originalWalkSpeed = 16
+local originalJumpPower = 50
+local lastNotification = 0 -- Чтобы не спамить уведомлениями
+
+-- ===== ФУНКЦИЯ УВЕДОМЛЕНИЯ =====
+local function notify(title, text, duration)
+    local now = tick()
+    if now - lastNotification < 2 then return end -- Антиспам: не чаще 1 раза в 2 сек
+    lastNotification = now
+    
+    pcall(function()
+        StarterGui:SetCore("SendNotification", {
+            Title = title,
+            Text = text,
+            Duration = duration or 3
+        })
+    end)
+end
+
+-- ===== ФУНКЦИЯ УСТАНОВКИ СКОРОСТИ =====
+local function setSpeed(speed)
+    local newSpeed = math.clamp(speed, MinSpeed, MaxSpeed)
+    
+    -- Предупреждение при опасной скорости
+    if newSpeed > SafeSpeed and CurrentSpeed <= SafeSpeed then
+        notify(
+            "ВНИМАНИЕ!",
+            "Скорость выше 60! Античит может забанить. Рекомендуем 50-60",
+            5
+        )
+    elseif newSpeed > 100 and CurrentSpeed <= 100 then
+        notify(
+            "ОПАСНОСТЬ!",
+            "Скорость " .. newSpeed .. "! Очень высокий риск бана!",
+            5
+        )
+    end
+    
+    -- Уведомление о смене скорости
+    if newSpeed ~= CurrentSpeed and SpeedHackEnabled then
+        local msg
+        if newSpeed <= SafeSpeed then
+            msg = "Скорость: " .. newSpeed .. " (безопасно)"
+        else
+            msg = "Скорость: " .. newSpeed .. " (рискованно!)"
+        end
+        notify("Скорость изменена", msg, 2)
+    end
+    
+    CurrentSpeed = newSpeed
+    
+    local char = LP.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum.WalkSpeed = SpeedHackEnabled and CurrentSpeed or originalWalkSpeed
+            hum.JumpPower = SpeedHackEnabled and (CurrentSpeed / 2) or originalJumpPower
+        end
+    end
+end
+
+-- При появлении персонажа
+LP.CharacterAdded:Connect(function(char)
+    local hum = char:WaitForChild("Humanoid")
+    task.wait(0.5)
+    if SpeedHackEnabled then
+        hum.WalkSpeed = CurrentSpeed
+        hum.JumpPower = CurrentSpeed / 2
+    end
+end)
+
+-- ===== GUI =====
+local gui = Instance.new("ScreenGui", CoreGui)
+gui.Name = "SpeedHack"
+gui.IgnoreGuiInset = true
+
+local frame = Instance.new("Frame", gui)
+frame.AnchorPoint = Vector2.new(0, 1)
+frame.Position = UDim2.new(0, 8, 1, -8)
+frame.Size = UDim2.new(0, 130, 0, 170)
+frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+frame.BackgroundTransparency = 0.5
+frame.BorderSizePixel = 0
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
+
+-- Заголовок
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, 0, 0, 18)
+title.Position = UDim2.new(0, 0, 0, 6)
+title.Text = "SPEEDHACK"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 12
+title.BackgroundTransparency = 1
+
+-- Кнопка ВКЛ/ВЫКЛ
+local toggleBtn = Instance.new("TextButton", frame)
+toggleBtn.Size = UDim2.new(0, 48, 0, 26)
+toggleBtn.Position = UDim2.new(0.5, -24, 0, 26)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+toggleBtn.Text = "OFF"
+toggleBtn.TextColor3 = Color3.new(1, 1, 1)
+toggleBtn.Font = Enum.Font.GothamBold
+toggleBtn.TextSize = 11
+toggleBtn.BorderSizePixel = 0
+Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 13)
+
+toggleBtn.MouseButton1Click:Connect(function()
+    SpeedHackEnabled = not SpeedHackEnabled
+    if SpeedHackEnabled then
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(50, 255, 50)
+        toggleBtn.Text = "ON"
+        setSpeed(CurrentSpeed)
+        notify("Спидхак включен", "Скорость: " .. CurrentSpeed, 2)
+    else
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+        toggleBtn.Text = "OFF"
+        local char = LP.Character
+        if char then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then
+                hum.WalkSpeed = originalWalkSpeed
+                hum.JumpPower = originalJumpPower
+            end
+        end
+        notify("Спидхак выключен", "", 1)
+    end
+end)
+
+-- Отображение скорости
+local speedDisplay = Instance.new("TextLabel", frame)
+speedDisplay.Size = UDim2.new(1, 0, 0, 22)
+speedDisplay.Position = UDim2.new(0, 0, 0, 56)
+speedDisplay.Text = tostring(DefaultSpeed)
+speedDisplay.TextColor3 = Color3.new(1, 1, 1)
+speedDisplay.Font = Enum.Font.GothamBold
+speedDisplay.TextSize = 18
+speedDisplay.BackgroundTransparency = 1
+
+-- Индикатор безопасности
+local safetyLabel = Instance.new("TextLabel", frame)
+safetyLabel.Size = UDim2.new(1, 0, 0, 14)
+safetyLabel.Position = UDim2.new(0, 0, 0, 78)
+safetyLabel.Text = "безопасно"
+safetyLabel.TextColor3 = Color3.fromRGB(80, 255, 80)
+safetyLabel.Font = Enum.Font.GothamMedium
+safetyLabel.TextSize = 9
+safetyLabel.BackgroundTransparency = 1
+
+-- Кнопка МИНУС
+local minusBtn = Instance.new("TextButton", frame)
+minusBtn.Size = UDim2.new(0, 32, 0, 32)
+minusBtn.Position = UDim2.new(0, 8, 0, 96)
+minusBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+minusBtn.Text = "-"
+minusBtn.TextColor3 = Color3.new(1, 1, 1)
+minusBtn.Font = Enum.Font.GothamBold
+minusBtn.TextSize = 18
+minusBtn.BorderSizePixel = 0
+Instance.new("UICorner", minusBtn).CornerRadius = UDim.new(0, 8)
+
+minusBtn.MouseButton1Click:Connect(function()
+    setSpeed(CurrentSpeed - StepSize)
+    speedDisplay.Text = tostring(CurrentSpeed)
+    updateSafety()
+end)
+
+-- Кнопка ПЛЮС
+local plusBtn = Instance.new("TextButton", frame)
+plusBtn.Size = UDim2.new(0, 32, 0, 32)
+plusBtn.Position = UDim2.new(0, 48, 0, 96)
+plusBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+plusBtn.Text = "+"
+plusBtn.TextColor3 = Color3.new(1, 1, 1)
+plusBtn.Font = Enum.Font.GothamBold
+plusBtn.TextSize = 18
+plusBtn.BorderSizePixel = 0
+Instance.new("UICorner", plusBtn).CornerRadius = UDim.new(0, 8)
+
+plusBtn.MouseButton1Click:Connect(function()
+    setSpeed(CurrentSpeed + StepSize)
+    speedDisplay.Text = tostring(CurrentSpeed)
+    updateSafety()
+end)
+
+-- Поле ввода
+local inputBox = Instance.new("TextBox", frame)
+inputBox.Size = UDim2.new(0, 80, 0, 22)
+inputBox.Position = UDim2.new(0.5, -40, 0, 96)
+inputBox.PlaceholderText = "Своя..."
+inputBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+inputBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+inputBox.TextColor3 = Color3.new(1, 1, 1)
+inputBox.Font = Enum.Font.GothamMedium
+inputBox.TextSize = 10
+inputBox.Text = ""
+inputBox.BorderSizePixel = 0
+Instance.new("UICorner", inputBox).CornerRadius = UDim.new(0, 6)
+
+inputBox.FocusLost:Connect(function(enterPressed)
+    local num = tonumber(inputBox.Text)
+    if num then
+        setSpeed(num)
+        speedDisplay.Text = tostring(CurrentSpeed)
+        updateSafety()
+    end
+    inputBox.Text = ""
+end)
+
+-- Кнопка СБРОС
+local resetBtn = Instance.new("TextButton", frame)
+resetBtn.Size = UDim2.new(0, 80, 0, 26)
+resetBtn.Position = UDim2.new(0.5, -40, 0, 134)
+resetBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+resetBtn.Text = "RESET " .. DefaultSpeed
+resetBtn.TextColor3 = Color3.new(1, 1, 1)
+resetBtn.Font = Enum.Font.GothamBold
+resetBtn.TextSize = 10
+resetBtn.BorderSizePixel = 0
+Instance.new("UICorner", resetBtn).CornerRadius = UDim.new(0, 13)
+
+resetBtn.MouseButton1Click:Connect(function()
+    setSpeed(DefaultSpeed)
+    speedDisplay.Text = tostring(DefaultSpeed)
+    updateSafety()
+end)
+
+-- Обновление индикатора безопасности
+function updateSafety()
+    if CurrentSpeed <= SafeSpeed then
+        safetyLabel.Text = "безопасно"
+        safetyLabel.TextColor3 = Color3.fromRGB(80, 255, 80)
+    elseif CurrentSpeed <= 100 then
+        safetyLabel.Text = "рискованно"
+        safetyLabel.TextColor3 = Color3.fromRGB(255, 200, 50)
+    else
+        safetyLabel.Text = "опасно!"
+        safetyLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
+    end
+end
+
+-- Обновление отображения
+game:GetService("RunService").RenderStepped:Connect(function()
+    if SpeedHackEnabled then
+        local char = LP.Character
+        if char then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then
+                local realSpeed = math.floor(hum.WalkSpeed)
+                speedDisplay.Text = realSpeed
+                if realSpeed ~= CurrentSpeed then
+                    updateSafety()
+                end
+            end
+        end
+    end
+end)
+
+-- Стартовое уведомление
+task.wait(1)
+notify("Спидхак загружен", "Безопасная скорость: 50-60", 4)
