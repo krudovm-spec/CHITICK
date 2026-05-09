@@ -1351,3 +1351,114 @@ Players.PlayerRemoving:Connect(function(p)
         lookLines[p] = nil
     end
 end)
+--[[
+    CHAMS + LAG SWITCH для XENO MOBILE
+    Кастом пинг с кнопками +/- по центру внизу
+]]
+
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+local LP = Players.LocalPlayer
+
+-- ===== НАСТРОЙКИ CHAMS =====
+local FillColor = Color3.new(1, 0, 0)
+local OutlineColor = Color3.new(1, 1, 1)
+local FillTransparency = 0.5
+local OutlineTransparency = 0
+
+-- ===== НАСТРОЙКИ ПИНГА =====
+local FakePing = 500
+local MinPing = 0
+local MaxPing = 999
+local PingStep = 50
+
+-- ===== CHAMS =====
+local function addChams(player)
+    if player == LP then return end
+    local function onChar(char)
+        local hl = Instance.new("Highlight", char)
+        hl.Name = "Chams"
+        hl.FillColor = FillColor
+        hl.OutlineColor = OutlineColor
+        hl.FillTransparency = FillTransparency
+        hl.OutlineTransparency = OutlineTransparency
+        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    end
+    if player.Character then onChar(player.Character) end
+    player.CharacterAdded:Connect(onChar)
+end
+
+for _, p in ipairs(Players:GetPlayers()) do addChams(p) end
+Players.PlayerAdded:Connect(addChams)
+
+-- ===== ФЕЙКОВЫЙ ПИНГ =====
+local function updatePing(value)
+    FakePing = math.clamp(value, MinPing, MaxPing)
+    pingLabel.Text = "Ping " .. FakePing .. " ms"
+end
+
+local oldNamecall
+oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+    local method = getnamecallmethod()
+    if method == "GetNetworkPing" then
+        return FakePing / 1000
+    end
+    return oldNamecall(self, ...)
+end)
+
+-- ===== GUI (центр внизу) =====
+local gui = Instance.new("ScreenGui", CoreGui)
+gui.Name = "PingControl"
+gui.IgnoreGuiInset = true
+
+-- Контейнер
+local frame = Instance.new("Frame", gui)
+frame.AnchorPoint = Vector2.new(0.5, 1)
+frame.Position = UDim2.new(0.5, 0, 1, -10)
+frame.Size = UDim2.new(0, 200, 0, 36)
+frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+frame.BackgroundTransparency = 0.5
+frame.BorderSizePixel = 0
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
+
+-- Кнопка МИНУС (слева)
+local minusBtn = Instance.new("TextButton", frame)
+minusBtn.Size = UDim2.new(0, 30, 0, 28)
+minusBtn.Position = UDim2.new(0, 4, 0, 4)
+minusBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+minusBtn.Text = "-"
+minusBtn.TextColor3 = Color3.new(1, 1, 1)
+minusBtn.Font = Enum.Font.GothamBold
+minusBtn.TextSize = 18
+minusBtn.BorderSizePixel = 0
+Instance.new("UICorner", minusBtn).CornerRadius = UDim.new(0, 6)
+
+minusBtn.MouseButton1Click:Connect(function()
+    updatePing(FakePing - PingStep)
+end)
+
+-- Отображение пинга (центр)
+local pingLabel = Instance.new("TextLabel", frame)
+pingLabel.Size = UDim2.new(0, 100, 0, 28)
+pingLabel.Position = UDim2.new(0.5, -50, 0, 4)
+pingLabel.BackgroundTransparency = 1
+pingLabel.Text = "Ping " .. FakePing .. " ms"
+pingLabel.TextColor3 = Color3.new(1, 1, 1)
+pingLabel.Font = Enum.Font.GothamBold
+pingLabel.TextSize = 14
+
+-- Кнопка ПЛЮС (справа)
+local plusBtn = Instance.new("TextButton", frame)
+plusBtn.Size = UDim2.new(0, 30, 0, 28)
+plusBtn.Position = UDim2.new(1, -34, 0, 4)
+plusBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+plusBtn.Text = "+"
+plusBtn.TextColor3 = Color3.new(1, 1, 1)
+plusBtn.Font = Enum.Font.GothamBold
+plusBtn.TextSize = 18
+plusBtn.BorderSizePixel = 0
+Instance.new("UICorner", plusBtn).CornerRadius = UDim.new(0, 6)
+
+plusBtn.MouseButton1Click:Connect(function()
+    updatePing(FakePing + PingStep)
+end)
