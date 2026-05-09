@@ -900,8 +900,26 @@ task.wait(1)
 notify("Спидхак загружен", "Безопасная скорость: 50-60", 4)
 
 --[[
+                end
+        else
+            line.Visible = false
+        end
+    end)
+end
+
+-- Все игроки
+for _, p in ipairs(Players:GetPlayers()) do
+    if p ~= LP then createTracer(p) end
+end
+Players.PlayerAdded:Connect(function(p)
+    if p ~= LP then createTracer(p) end
+end)
+Players.PlayerRemoving:Connect(function(p)
+    if tracers[p] then tracers[p]:Remove(); tracers[p] = nil end
+end)
+--[[
     TRACER для XENO MOBILE
-    Лучи от центра к врагам + линия вниз по середине
+    Лучи от нижней части экрана к врагам
 ]]
 
 local Players = game:GetService("Players")
@@ -914,14 +932,7 @@ local TracerColor = Color3.new(1, 1, 1)
 local TracerThickness = 1
 local TracerTransparency = 0.5
 
--- ===== ЦЕНТРАЛЬНАЯ ВЕРТИКАЛЬНАЯ ЛИНИЯ =====
-local centerLine = Drawing.new("Line")
-centerLine.Color = Color3.new(1, 1, 1)
-centerLine.Thickness = 1
-centerLine.Transparency = 0.3
-centerLine.Visible = true
-
--- ===== TRACER'Ы К ВРАГАМ =====
+-- ===== TRACER'Ы =====
 local tracers = {}
 
 local function createTracer(player)
@@ -939,14 +950,12 @@ local function createTracer(player)
         if root and player ~= LP then
             local screenPos, onScreen = Camera:WorldToViewportPoint(root.Position)
             local screenSize = Camera.ViewportSize
-            local center = Vector2.new(screenSize.X / 2, screenSize.Y / 2)
             
-            -- Линия сверху вниз по центру
-            centerLine.From = Vector2.new(center.X, 0)
-            centerLine.To = Vector2.new(center.X, screenSize.Y)
+            -- Нижний центр экрана
+            local bottomCenter = Vector2.new(screenSize.X / 2, screenSize.Y)
             
             if onScreen then
-                line.From = center
+                line.From = bottomCenter
                 line.To = Vector2.new(screenPos.X, screenPos.Y)
                 line.Visible = true
             else
