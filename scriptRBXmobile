@@ -901,7 +901,7 @@ notify("Спидхак загружен", "Безопасная скорость
 
 --[[
     TRACER для XENO MOBILE
-    Лучи от нижнего центра экрана к врагам
+    Лучи от центра к врагам + линия вниз по середине
 ]]
 
 local Players = game:GetService("Players")
@@ -910,11 +910,18 @@ local Camera = workspace.CurrentCamera
 local LP = Players.LocalPlayer
 
 -- ===== НАСТРОЙКИ =====
-local TracerColor = Color3.new(1, 1, 1) -- Белый
+local TracerColor = Color3.new(1, 1, 1)
 local TracerThickness = 1
 local TracerTransparency = 0.5
 
--- ===== TRACER'Ы =====
+-- ===== ЦЕНТРАЛЬНАЯ ВЕРТИКАЛЬНАЯ ЛИНИЯ =====
+local centerLine = Drawing.new("Line")
+centerLine.Color = Color3.new(1, 1, 1)
+centerLine.Thickness = 1
+centerLine.Transparency = 0.3
+centerLine.Visible = true
+
+-- ===== TRACER'Ы К ВРАГАМ =====
 local tracers = {}
 
 local function createTracer(player)
@@ -932,25 +939,18 @@ local function createTracer(player)
         if root and player ~= LP then
             local screenPos, onScreen = Camera:WorldToViewportPoint(root.Position)
             local screenSize = Camera.ViewportSize
+            local center = Vector2.new(screenSize.X / 2, screenSize.Y / 2)
             
-            -- Нижний центр экрана
-            local bottomCenter = Vector2.new(screenSize.X / 2, screenSize.Y)
+            -- Линия сверху вниз по центру
+            centerLine.From = Vector2.new(center.X, 0)
+            centerLine.To = Vector2.new(center.X, screenSize.Y)
             
             if onScreen then
-                line.From = bottomCenter
+                line.From = center
                 line.To = Vector2.new(screenPos.X, screenPos.Y)
                 line.Visible = true
             else
-                -- Направление если за экраном
-                local dir = Vector2.new(screenPos.X - bottomCenter.X, screenPos.Y - bottomCenter.Y)
-                if dir.Magnitude > 0 then
-                    dir = dir.Unit
-                    line.From = bottomCenter
-                    line.To = bottomCenter + dir * screenSize.Y
-                    line.Visible = true
-                else
-                    line.Visible = false
-                end
+                line.Visible = false
             end
         else
             line.Visible = false
