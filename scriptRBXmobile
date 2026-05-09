@@ -378,12 +378,14 @@ function StartScript()
 end
 
 --[[
-    FLY + NOCLIP | XENO MOBILE
-    Кнопки: центр левого края экрана
+    --[[
+    FLY + NOCLIP | XENO MOBILE (ИСПРАВЛЕНО)
+    Зажимай пробел (стрелку вверх) — летишь вверх
 ]]
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 
 local LP = Players.LocalPlayer
@@ -421,7 +423,7 @@ LP.CharacterAdded:Connect(function()
     end
 end)
 
--- ===== FLY =====
+-- ===== FLY (ИСПРАВЛЕН - висит в воздухе) =====
 local function flyLoop()
     local char = LP.Character
     if not char then return end
@@ -429,7 +431,9 @@ local function flyLoop()
     local hum = char:FindFirstChildOfClass("Humanoid")
     if not root or not hum then return end
     
+    -- ОТКЛЮЧАЕМ ГРАВИТАЦИЮ
     hum.PlatformStand = true
+    root.Velocity = Vector3.zero -- Сбрасываем скорость по умолчанию (НЕ ПАДАЕТ)
     
     local direction = Vector3.zero
     local camCF = Camera.CFrame
@@ -444,32 +448,46 @@ local function flyLoop()
     
     if direction.Magnitude > 0 then
         root.Velocity = direction.Unit * FlySpeed
-    else
-        root.Velocity = Vector3.zero
     end
+    -- Если ничего не нажато — Velocity = 0 (зависает на месте)
 end
+
+-- Кнопка ПРОБЕЛ для Fly Up (держит в воздухе)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if FlyEnabled and not gameProcessed then
+        if input.KeyCode == Enum.KeyCode.Space then
+            FlyKeys.Up = true
+        end
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.Space then
+        FlyKeys.Up = false
+    end
+end)
 
 RunService.RenderStepped:Connect(function()
     if FlyEnabled then flyLoop() end
     if NoclipEnabled then setNoclip(true) end
 end)
 
--- ===== ГЛАВНЫЙ GUI (левый край, центр) =====
+-- ===== GUI (левый край, центр) =====
 local gui = Instance.new("ScreenGui", CoreGui)
 gui.Name = "FlyNoclip"
 gui.IgnoreGuiInset = true
 
--- Рамка-контейнер (по центру слева)
+-- Рамка
 local frame = Instance.new("Frame", gui)
-frame.AnchorPoint = Vector2.new(0, 0.5) -- якорь: левый край + центр по вертикали
-frame.Position = UDim2.new(0, 8, 0.5, 0) -- 8px от левого края, 50% высоты
+frame.AnchorPoint = Vector2.new(0, 0.5)
+frame.Position = UDim2.new(0, 8, 0.5, 0)
 frame.Size = UDim2.new(0, 44, 0, 120)
 frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 frame.BackgroundTransparency = 0.5
 frame.BorderSizePixel = 0
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
 
--- ===== КНОПКА FLY =====
+-- Кнопка FLY
 local flyBtn = Instance.new("TextButton", frame)
 flyBtn.Size = UDim2.new(0, 36, 0, 36)
 flyBtn.Position = UDim2.new(0.5, -18, 0, 8)
@@ -479,7 +497,7 @@ flyBtn.TextColor3 = Color3.new(1, 1, 1)
 flyBtn.Font = Enum.Font.GothamBold
 flyBtn.TextSize = 18
 flyBtn.BorderSizePixel = 0
-Instance.new("UICorner", flyBtn).CornerRadius = UDim.new(1, 0) -- круг
+Instance.new("UICorner", flyBtn).CornerRadius = UDim.new(1, 0)
 
 flyBtn.MouseButton1Click:Connect(function()
     FlyEnabled = not FlyEnabled
@@ -489,7 +507,7 @@ flyBtn.MouseButton1Click:Connect(function()
     else
         flyBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
         flyBtn.Text = "F"
-        -- Сбрасываем PlatformStand
+        FlyKeys.Up = false
         pcall(function()
             local char = LP.Character
             if char then
@@ -500,7 +518,7 @@ flyBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- ===== КНОПКА NOCLIP =====
+-- Кнопка NOCLIP
 local noclipBtn = Instance.new("TextButton", frame)
 noclipBtn.Size = UDim2.new(0, 36, 0, 36)
 noclipBtn.Position = UDim2.new(0.5, -18, 0, 52)
@@ -510,7 +528,7 @@ noclipBtn.TextColor3 = Color3.new(1, 1, 1)
 noclipBtn.Font = Enum.Font.GothamBold
 noclipBtn.TextSize = 18
 noclipBtn.BorderSizePixel = 0
-Instance.new("UICorner", noclipBtn).CornerRadius = UDim.new(1, 0) -- круг
+Instance.new("UICorner", noclipBtn).CornerRadius = UDim.new(1, 0)
 
 noclipBtn.MouseButton1Click:Connect(function()
     NoclipEnabled = not NoclipEnabled
@@ -525,16 +543,39 @@ noclipBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- ===== КНОПКИ НАПРАВЛЕНИЙ (джойстик FLY) =====
--- Создаём только если Fly включен (появляются рядом)
+-- Кнопка ПРОБЕЛ (ВВЕРХ) — большая, снизу по центру
+local spaceBtn = Instance.new("TextButton", gui)
+spaceBtn.AnchorPoint = Vector2.new(0.5, 1)
+spaceBtn.Position = UDim2.new(0.5, 0, 1, -20)
+spaceBtn.Size = UDim2.new(0, 120, 0, 60)
+spaceBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+spaceBtn.BackgroundTransparency = 0.6
+spaceBtn.Text = "UP ↑"
+spaceBtn.TextColor3 = Color3.new(1, 1, 1)
+spaceBtn.Font = Enum.Font.GothamBold
+spaceBtn.TextSize = 18
+spaceBtn.BorderSizePixel = 0
+Instance.new("UICorner", spaceBtn).CornerRadius = UDim.new(0, 12)
+
+spaceBtn.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        FlyKeys.Up = true
+    end
+end)
+spaceBtn.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        FlyKeys.Up = false
+    end
+end)
+
+-- Джойстик направлений
 local dirFrame = Instance.new("Frame", gui)
 dirFrame.AnchorPoint = Vector2.new(0, 0.5)
-dirFrame.Position = UDim2.new(0, 60, 0.5, 0) -- справа от главной рамки
+dirFrame.Position = UDim2.new(0, 60, 0.5, 0)
 dirFrame.Size = UDim2.new(0, 80, 0, 90)
 dirFrame.BackgroundTransparency = 1
 dirFrame.Visible = false
 
--- Функция создания кнопки направления
 local function createDirBtn(name, posX, posY, text, key)
     local btn = Instance.new("TextButton", dirFrame)
     btn.Size = UDim2.new(0, 28, 0, 28)
@@ -559,23 +600,18 @@ local function createDirBtn(name, posX, posY, text, key)
             FlyKeys[key] = false
         end
     end)
-    
     return btn
 end
 
-createDirBtn("Up", 26, 0, "↑", "Up")
-createDirBtn("Down", 26, 48, "↓", "Down")
+createDirBtn("Forward", 26, 0, "↑", "Forward")
+createDirBtn("Back", 26, 48, "↓", "Backward")
 createDirBtn("Left", 0, 24, "←", "Left")
 createDirBtn("Right", 52, 24, "→", "Right")
 
--- Обновление видимости джойстика
 flyBtn.MouseButton1Click:Connect(function()
-    -- Этот код срабатывает ДО переключения флага
-    -- Поэтому используем task.wait
     task.wait(0.05)
     dirFrame.Visible = FlyEnabled
 end)
 
--- Начальная настройка видимости
 task.wait(0.5)
 dirFrame.Visible = FlyEnabled
