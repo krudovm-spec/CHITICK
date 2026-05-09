@@ -1351,123 +1351,87 @@ Players.PlayerRemoving:Connect(function(p)
         lookLines[p] = nil
     end
 end)
+
 --[[
-    CHAMS + LAG SWITCH для XENO MOBILE (ИСПРАВЛЕНО)
-    Кастом пинг с кнопками +/- по центру внизу
+    DEATH MARKER + ИМЯ для XENO MOBILE
+    Точка смерти + имя игрока
 ]]
 
 local Players = game:GetService("Players")
-local CoreGui = game:GetService("CoreGui")
-local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
 local LP = Players.LocalPlayer
 
--- ===== НАСТРОЙКИ CHAMS =====
-local FillColor = Color3.new(1, 0, 0)
-local OutlineColor = Color3.new(1, 1, 1)
-local FillTransparency = 0.5
-local OutlineTransparency = 0
+-- ===== НАСТРОЙКИ =====
+local MarkerColor = Color3.new(1, 1, 1)
+local MarkerSize = Vector3.new(2, 2, 2)
+local MarkerTransparency = 0.4
+local MarkerLifetime = 15
 
--- ===== НАСТРОЙКИ ПИНГА =====
-local FakePing = 500
-local MinPing = 0
-local MaxPing = 999
-local PingStep = 50
-
--- ===== CHAMS =====
-local function addChams(player)
-    if player == LP then return end
-    local function onChar(char)
-        task.wait(0.1)
-        local hl = Instance.new("Highlight", char)
-        hl.Name = "Chams"
-        hl.FillColor = FillColor
-        hl.OutlineColor = OutlineColor
-        hl.FillTransparency = FillTransparency
-        hl.OutlineTransparency = OutlineTransparency
+-- ===== МЕТКА СМЕРТИ С ИМЕНЕМ =====
+local function addDeathMarker(player, character)
+    local root = character:WaitForChild("HumanoidRootPart", 5)
+    local hum = character:FindFirstChildOfClass("Humanoid")
+    if not root or not hum then return end
+    
+    hum.Died:Connect(function()
+        local pos = root.Position
+        local playerName = player.Name
+        
+        -- Сфера
+        local marker = Instance.new("Part")
+        marker.Name = "DeathMarker"
+        marker.Size = MarkerSize
+        marker.Position = pos + Vector3.new(0, 1, 0)
+        marker.Anchored = true
+        marker.CanCollide = false
+        marker.Color = MarkerColor
+        marker.Material = Enum.Material.Neon
+        marker.Transparency = MarkerTransparency
+        marker.Shape = Enum.PartType.Ball
+        marker.Parent = Workspace
+        
+        -- Обводка
+        local hl = Instance.new("Highlight", marker)
+        hl.FillColor = MarkerColor
+        hl.OutlineColor = MarkerColor
+        hl.FillTransparency = 0.5
+        hl.OutlineTransparency = 0
         hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+        
+        -- Имя над точкой
+        local bill = Instance.new("BillboardGui", marker)
+        bill.Name = "NameTag"
+        bill.Size = UDim2.new(0, 100, 0, 30)
+        bill.StudsOffset = Vector3.new(0, 2, 0)
+        bill.AlwaysOnTop = true
+        
+        local label = Instance.new("TextLabel", bill)
+        label.Size = UDim2.new(1, 0, 1, 0)
+        label.BackgroundTransparency = 1
+        label.Text = "💀 " .. playerName
+        label.TextColor3 = Color3.new(1, 1, 1)
+        label.TextStrokeTransparency = 0.5
+        label.Font = Enum.Font.GothamBold
+        label.TextSize = 14
+        
+        -- Удаление
+        task.delay(MarkerLifetime, function()
+            pcall(function() marker:Destroy() end)
+        end)
+    end)
+end
+
+-- Все игроки
+for _, p in ipairs(Players:GetPlayers()) do
+    if p ~= LP and p.Character then
+        addDeathMarker(p, p.Character)
     end
-    if player.Character then onChar(player.Character) end
-    player.CharacterAdded:Connect(onChar)
 end
 
-for _, p in ipairs(Players:GetPlayers()) do addChams(p) end
-Players.PlayerAdded:Connect(addChams)
-
--- ===== ФЕЙКОВЫЙ ПИНГ (ИСПРАВЛЕНО) =====
-local networkStats = game:GetService("Stats").Network
-local serverStats = networkStats:FindFirstChild("ServerStatsItem")
-local pingItem = serverStats and serverStats:FindFirstChild("Data Ping")
-
-local function updatePing(value)
-    FakePing = math.clamp(value, MinPing, MaxPing)
-    pingLabel.Text = "Ping " .. FakePing .. " ms"
-end
-
--- Перехват пинга через RenderStepped
-RunService.RenderStepped:Connect(function()
-    pcall(function()
-        -- Искусственная задержка для симуляции пинга
-        local delay = FakePing / 1000
-        if delay > 0 then
-            local start = tick()
-            while tick() - start < delay do end
+Players.PlayerAdded:Connect(function(p)
+    p.CharacterAdded:Connect(function(char)
+        if p ~= LP then
+            addDeathMarker(p, char)
         end
     end)
-end)
-
--- ===== GUI (центр внизу) =====
-local gui = Instance.new("ScreenGui", CoreGui)
-gui.Name = "PingControl"
-gui.IgnoreGuiInset = true
-
--- Контейнер
-local frame = Instance.new("Frame", gui)
-frame.AnchorPoint = Vector2.new(0.5, 1)
-frame.Position = UDim2.new(0.5, 0, 1, -10)
-frame.Size = UDim2.new(0, 200, 0, 36)
-frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-frame.BackgroundTransparency = 0.5
-frame.BorderSizePixel = 0
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
-
--- Кнопка МИНУС
-local minusBtn = Instance.new("TextButton", frame)
-minusBtn.Size = UDim2.new(0, 30, 0, 28)
-minusBtn.Position = UDim2.new(0, 4, 0, 4)
-minusBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-minusBtn.Text = "-"
-minusBtn.TextColor3 = Color3.new(1, 1, 1)
-minusBtn.Font = Enum.Font.GothamBold
-minusBtn.TextSize = 18
-minusBtn.BorderSizePixel = 0
-Instance.new("UICorner", minusBtn).CornerRadius = UDim.new(0, 6)
-
-minusBtn.MouseButton1Click:Connect(function()
-    updatePing(FakePing - PingStep)
-end)
-
--- Отображение пинга
-local pingLabel = Instance.new("TextLabel", frame)
-pingLabel.Size = UDim2.new(0, 100, 0, 28)
-pingLabel.Position = UDim2.new(0.5, -50, 0, 4)
-pingLabel.BackgroundTransparency = 1
-pingLabel.Text = "Ping " .. FakePing .. " ms"
-pingLabel.TextColor3 = Color3.new(1, 1, 1)
-pingLabel.Font = Enum.Font.GothamBold
-pingLabel.TextSize = 14
-
--- Кнопка ПЛЮС
-local plusBtn = Instance.new("TextButton", frame)
-plusBtn.Size = UDim2.new(0, 30, 0, 28)
-plusBtn.Position = UDim2.new(1, -34, 0, 4)
-plusBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-plusBtn.Text = "+"
-plusBtn.TextColor3 = Color3.new(1, 1, 1)
-plusBtn.Font = Enum.Font.GothamBold
-plusBtn.TextSize = 18
-plusBtn.BorderSizePixel = 0
-Instance.new("UICorner", plusBtn).CornerRadius = UDim.new(0, 6)
-
-plusBtn.MouseButton1Click:Connect(function()
-    updatePing(FakePing + PingStep)
 end)
