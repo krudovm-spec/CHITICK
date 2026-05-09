@@ -979,26 +979,73 @@ Players.PlayerRemoving:Connect(function(p)
 end)
 
 --[[
+    gui.IgnoreGuiInset = true
+
+end)
+
+--[[
     SETTINGS HUB для XENO MOBILE
-    Кнопка гайка ⚙️ слева по центру
-    Тени | FPS | Анти-АФК | Невидимость
+    Тени | FPS | Оптимизация | Анти-АФК | Невидимость
 ]]
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Lighting = game:GetService("Lighting")
 local CoreGui = game:GetService("CoreGui")
-local Stats = game:GetService("Stats")
 local VirtualUser = game:GetService("VirtualUser")
+local Workspace = game:GetService("Workspace")
 local LP = Players.LocalPlayer
 
--- ===== НАСТРОЙКИ ПО УМОЛЧАНИЮ =====
+-- ===== НАСТРОЙКИ =====
 local Settings = {
-    Shadows = true,        -- Тени вкл/выкл
-    FPS = true,            -- Счётчик FPS
-    AntiAFK = true,        -- Анти-АФК
-    Invisible = false      -- Невидимость
+    Shadows = true,
+    FPS = true,
+    Optimize = false,
+    AntiAFK = true,
+    Invisible = false
 }
+
+-- ===== ОПТИМИЗАЦИЯ FPS =====
+local function setOptimize(state)
+    -- Отключение теней
+    Lighting.GlobalShadows = not state
+    
+    -- Минимальная дальность прорисовки
+    Workspace.StreamingMinRadius = state and 32 or 64
+    Workspace.StreamingTargetRadius = state and 64 or 256
+    
+    -- Отключение травы/деталей
+    if state then
+        -- Удаляем Decals (текстуры на земле)
+        for _, obj in ipairs(Workspace:GetDescendants()) do
+            if obj:IsA("Decal") or obj:IsA("Texture") then
+                pcall(function() obj:Destroy() end)
+            end
+            if obj:IsA("ParticleEmitter") or obj:IsA("Trail") then
+                obj.Enabled = false
+            end
+        end
+        
+        -- Отключаем пост-эффекты
+        Lighting.Bloom.Enabled = false
+        Lighting.Blur.Enabled = false
+        Lighting.ColorCorrection.Enabled = false
+        Lighting.SunRays.Enabled = false
+        Lighting.DepthOfField.Enabled = false
+        
+        -- FPS разблокировка
+        if setfpscap then 
+            setfpscap(999) 
+        end
+    else
+        -- Возвращаем эффекты
+        Lighting.Bloom.Enabled = true
+        Lighting.ColorCorrection.Enabled = true
+        
+        Workspace.StreamingMinRadius = 64
+        Workspace.StreamingTargetRadius = 256
+    end
+end
 
 -- ===== НЕВИДИМОСТЬ =====
 local function setInvisible(state)
@@ -1006,19 +1053,32 @@ local function setInvisible(state)
     if not char then return end
     
     for _, part in ipairs(char:GetDescendants()) do
-        if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+        if part:IsA("BasePart") then
+            part.Transparency = state and 1 or 0
+        end
+        if part:IsA("Decal") then
             part.Transparency = state and 1 or 0
         end
     end
     
-    -- Оставляем RootPart видимым для перемещения
-    local root = char:FindFirstChild("HumanoidRootPart")
-    if root then root.Transparency = state and 0.5 or 0 end
+    for _, v in ipairs(char:GetChildren()) do
+        if v:IsA("Highlight") then v.Enabled = not state end
+        if v:IsA("BillboardGui") then v.Enabled = not state end
+    end
+    
+    if state then
+        for _, v in ipairs(char:GetChildren()) do
+            if v:IsA("Accessory") then v:Destroy() end
+        end
+    end
 end
 
 LP.CharacterAdded:Connect(function(char)
-    task.wait(0.2)
-    if Settings.Invisible then setInvisible(true) end
+    task.wait(0.1)
+    if Settings.Invisible then
+        task.wait(0.2)
+        setInvisible(true)
+    end
 end)
 
 -- ===== ТЕНИ =====
@@ -1044,10 +1104,19 @@ local gui = Instance.new("ScreenGui", CoreGui)
 gui.Name = "SettingsHub"
 gui.IgnoreGuiInset = true
 
--- Кнопка ГАЙКА ⚙️
+local menu = Instance.new("Frame", gui)
+menu.AnchorPoint = Vector2.new(1, 0.5)
+menu.Position = UDim2.new(1, -52, 0.5, 0)
+menu.Size = UDim2.new(0, 150, 0, 240)
+menu.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+menu.BackgroundTransparency = 0.5
+menu.BorderSizePixel = 0
+menu.Visible = false
+Instance.new("UICorner", menu).CornerRadius = UDim.new(0, 10)
+
 local gearBtn = Instance.new("TextButton", gui)
-gearBtn.AnchorPoint = Vector2.new(0, 0.5)
-gearBtn.Position = UDim2.new(0, 8, 0.5, 0)
+gearBtn.AnchorPoint = Vector2.new(1, 0.5)
+gearBtn.Position = UDim2.new(1, -8, 0.5, 0)
 gearBtn.Size = UDim2.new(0, 36, 0, 36)
 gearBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 gearBtn.BackgroundTransparency = 0.4
@@ -1056,23 +1125,11 @@ gearBtn.TextSize = 20
 gearBtn.BorderSizePixel = 0
 Instance.new("UICorner", gearBtn).CornerRadius = UDim.new(1, 0)
 
--- Меню (справа от гайки)
-local menu = Instance.new("Frame", gui)
-menu.AnchorPoint = Vector2.new(0, 0.5)
-menu.Position = UDim2.new(0, 52, 0.5, 0)
-menu.Size = UDim2.new(0, 140, 0, 200)
-menu.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-menu.BackgroundTransparency = 0.5
-menu.BorderSizePixel = 0
-menu.Visible = false
-Instance.new("UICorner", menu).CornerRadius = UDim.new(0, 10)
-
--- Открытие/закрытие меню
 gearBtn.MouseButton1Click:Connect(function()
     menu.Visible = not menu.Visible
 end)
 
--- ===== ФУНКЦИЯ СОЗДАНИЯ ПЕРЕКЛЮЧАТЕЛЯ =====
+-- ===== ПЕРЕКЛЮЧАТЕЛИ =====
 local function createToggle(parent, name, yPos, default, callback)
     local toggle = Instance.new("TextButton", parent)
     toggle.Size = UDim2.new(1, -16, 0, 32)
@@ -1088,14 +1145,12 @@ local function createToggle(parent, name, yPos, default, callback)
     Instance.new("UICorner", toggle).CornerRadius = UDim.new(0, 6)
     
     local state = default
-    
     toggle.MouseButton1Click:Connect(function()
         state = not state
         toggle.BackgroundColor3 = state and Color3.fromRGB(50, 255, 50) or Color3.fromRGB(255, 50, 50)
         toggle.Text = "   " .. name .. "  " .. (state and "ON" or "OFF")
         callback(state)
     end)
-    
     return toggle
 end
 
@@ -1117,15 +1172,33 @@ end)
 
 -- Счётчик FPS
 local fpsLabel
-createToggle(menu, "FPS", 68, Settings.FPS, function(state)
+createToggle(menu, "FPS", 64, Settings.FPS, function(state)
     Settings.FPS = state
     if fpsLabel then fpsLabel.Visible = state end
 end)
 
--- Создание счётчика FPS
+-- Оптимизация FPS
+createToggle(menu, "ФПС БУСТ", 98, Settings.Optimize, function(state)
+    Settings.Optimize = state
+    setOptimize(state)
+end)
+
+-- Анти-АФК
+createToggle(menu, "Анти-АФК", 132, Settings.AntiAFK, function(state)
+    Settings.AntiAFK = state
+    setAntiAFK(state)
+end)
+
+-- Невидимость
+createToggle(menu, "Невидимость", 166, Settings.Invisible, function(state)
+    Settings.Invisible = state
+    setInvisible(state)
+end)
+
+-- ===== СЧЁТЧИК FPS =====
 fpsLabel = Instance.new("TextLabel", gui)
-fpsLabel.AnchorPoint = Vector2.new(1, 0)
-fpsLabel.Position = UDim2.new(1, -8, 0, 8)
+fpsLabel.AnchorPoint = Vector2.new(0, 0)
+fpsLabel.Position = UDim2.new(0, 8, 0, 8)
 fpsLabel.Size = UDim2.new(0, 80, 0, 22)
 fpsLabel.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 fpsLabel.BackgroundTransparency = 0.5
@@ -1137,26 +1210,26 @@ fpsLabel.BorderSizePixel = 0
 fpsLabel.Visible = Settings.FPS
 Instance.new("UICorner", fpsLabel).CornerRadius = UDim.new(0, 6)
 
-RunService.RenderStepped:Connect(function()
-    if Settings.FPS then
-        local fps = math.floor(1 / RunService.RenderStepped:Wait())
-        fpsLabel.Text = "FPS: " .. fps
-        if fps < 30 then fpsLabel.TextColor3 = Color3.new(1, 0.3, 0.3)
-        elseif fps < 60 then fpsLabel.TextColor3 = Color3.new(1, 0.8, 0)
-        else fpsLabel.TextColor3 = Color3.new(0.3, 1, 0.3) end
+local frameCount = 0
+local elapsed = 0
+local currentFPS = 0
+
+RunService.RenderStepped:Connect(function(delta)
+    frameCount += 1
+    elapsed += delta
+    
+    if elapsed >= 0.5 then
+        currentFPS = math.floor(frameCount / elapsed)
+        frameCount = 0
+        elapsed = 0
     end
-end)
-
--- Анти-АФК
-createToggle(menu, "Анти-АФК", 106, Settings.AntiAFK, function(state)
-    Settings.AntiAFK = state
-    setAntiAFK(state)
-end)
-
--- Невидимость
-createToggle(menu, "Невидимость", 144, Settings.Invisible, function(state)
-    Settings.Invisible = state
-    setInvisible(state)
+    
+    if Settings.FPS then
+        fpsLabel.Text = "FPS: " .. currentFPS
+        fpsLabel.TextColor3 = currentFPS < 30 and Color3.new(1, 0.3, 0.3) 
+            or currentFPS < 60 and Color3.new(1, 0.8, 0) 
+            or Color3.new(0.3, 1, 0.3)
+    end
 end)
 
 -- ===== ЗАПУСК =====
