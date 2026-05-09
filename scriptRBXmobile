@@ -1540,3 +1540,62 @@ Players.PlayerAdded:Connect(function(p)
         end
     end)
 end)
+--[[
+    ESP для XENO MOBILE
+    Имя + HP над игроком (без квадрата)
+]]
+
+local Players = game:GetService("Players")
+local LP = Players.LocalPlayer
+
+-- ===== ESP =====
+local function createESP(player)
+    local function setup(char)
+        local head = char:WaitForChild("Head", 10)
+        local hum = char:WaitForChild("Humanoid", 10)
+        if not head or not hum then return end
+        
+        local bill = Instance.new("BillboardGui", head)
+        bill.Name = "ESP"
+        bill.Size = UDim2.new(0, 100, 0, 40)
+        bill.StudsOffset = Vector3.new(0, 2.5, 0)
+        bill.AlwaysOnTop = true
+        
+        -- Имя
+        local nameLabel = Instance.new("TextLabel", bill)
+        nameLabel.Size = UDim2.new(1, 0, 0, 18)
+        nameLabel.Position = UDim2.new(0, 0, 0, 0)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Text = player.Name
+        nameLabel.TextColor3 = Color3.new(1, 1, 1)
+        nameLabel.Font = Enum.Font.GothamBold
+        nameLabel.TextSize = 13
+        nameLabel.TextStrokeTransparency = 0.5
+        
+        -- HP
+        local hpLabel = Instance.new("TextLabel", bill)
+        hpLabel.Size = UDim2.new(1, 0, 0, 16)
+        hpLabel.Position = UDim2.new(0, 0, 0, 18)
+        hpLabel.BackgroundTransparency = 1
+        hpLabel.Text = math.floor(hum.Health) .. " HP"
+        hpLabel.TextColor3 = hum.Health > 50 and Color3.new(0.3, 1, 0.3) or Color3.new(1, 0.3, 0.3)
+        hpLabel.Font = Enum.Font.GothamMedium
+        hpLabel.TextSize = 11
+        hpLabel.TextStrokeTransparency = 0.5
+        
+        hum.HealthChanged:Connect(function(health)
+            hpLabel.Text = math.floor(health) .. " HP"
+            hpLabel.TextColor3 = health > 50 and Color3.new(0.3, 1, 0.3) or Color3.new(1, 0.3, 0.3)
+        end)
+    end
+    
+    if player.Character then setup(player.Character) end
+    player.CharacterAdded:Connect(setup)
+end
+
+for _, p in ipairs(Players:GetPlayers()) do
+    if p ~= LP then createESP(p) end
+end
+Players.PlayerAdded:Connect(function(p)
+    if p ~= LP then createESP(p) end
+end)
