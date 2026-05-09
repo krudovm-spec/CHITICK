@@ -1,0 +1,338 @@
+-- [[ ТОЛЬКО ДЛЯ ТЕЛЕФОНА ]]
+local secureKey = "FREE_SLAKINKOD"
+local keyLink = "https://t.me/HDVCHIKpublic/27"
+local isLoggedIn = false
+local failCount = 0
+
+local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
+local Lighting = game:GetService("Lightning")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+-- === МАЛЕНЬКОЕ ОКНО ВХОДА ===
+local loadingGui = Instance.new("ScreenGui", CoreGui)
+loadingGui.IgnoreGuiInset = true
+
+local blur = Instance.new("BlurEffect", Lighting)
+blur.Size = 25
+
+local mainFrame = Instance.new("Frame", loadingGui)
+mainFrame.Size = UDim2.new(1, 0, 1, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+
+-- Экран загрузки
+local loadFrame = Instance.new("Frame", mainFrame)
+loadFrame.Size = UDim2.new(0, 260, 0, 100)
+loadFrame.Position = UDim2.new(0.5, -130, 0.5, -50)
+loadFrame.BackgroundTransparency = 1
+
+local loadImg = Instance.new("ImageLabel", loadFrame)
+loadImg.Size = UDim2.new(0, 40, 0, 40)
+loadImg.Position = UDim2.new(0.5, -20, 0, 10)
+loadImg.Image = "rbxassetid://6031265917"
+
+local loadText = Instance.new("TextLabel", loadFrame)
+loadText.Size = UDim2.new(1, 0, 0, 30)
+loadText.Position = UDim2.new(0, 0, 0.7, 0)
+loadText.Text = "Загрузка"
+loadText.TextColor3 = Color3.new(1, 1, 1)
+loadText.Font = Enum.Font.GothamMedium
+loadText.TextSize = 14
+loadText.BackgroundTransparency = 1
+
+-- Окно входа
+local loginFrame = Instance.new("Frame", mainFrame)
+loginFrame.Size = UDim2.new(0, 260, 0, 170)
+loginFrame.Position = UDim2.new(0.5, -130, 0.5, -85)
+loginFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+loginFrame.Visible = false
+loginFrame.BorderSizePixel = 0
+Instance.new("UICorner", loginFrame).CornerRadius = UDim.new(0, 8)
+
+local keyInput = Instance.new("TextBox", loginFrame)
+keyInput.Size = UDim2.new(0, 220, 0, 35)
+keyInput.Position = UDim2.new(0.5, -110, 0.15, 0)
+keyInput.PlaceholderText = "Введите ключ"
+keyInput.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+keyInput.TextColor3 = Color3.new(1, 1, 1)
+keyInput.TextSize = 14
+Instance.new("UICorner", keyInput).CornerRadius = UDim.new(0, 6)
+
+local activateBtn = Instance.new("TextButton", loginFrame)
+activateBtn.Size = UDim2.new(0, 220, 0, 35)
+activateBtn.Position = UDim2.new(0.5, -110, 0.45, 0)
+activateBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+activateBtn.Text = "Активировать"
+activateBtn.TextColor3 = Color3.new(1, 1, 1)
+activateBtn.TextSize = 14
+Instance.new("UICorner", activateBtn).CornerRadius = UDim.new(0, 6)
+
+local getKeyBtn = Instance.new("TextButton", loginFrame)
+getKeyBtn.Size = UDim2.new(0, 220, 0, 30)
+getKeyBtn.Position = UDim2.new(0.5, -110, 0.72, 0)
+getKeyBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+getKeyBtn.Text = "Получить ключ"
+getKeyBtn.TextColor3 = Color3.new(1, 1, 1)
+getKeyBtn.TextSize = 13
+Instance.new("UICorner", getKeyBtn).CornerRadius = UDim.new(0, 6)
+
+-- Анимация загрузки
+task.spawn(function()
+    local tween = TweenService:Create(loadImg, TweenInfo.new(1.5, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1), {Rotation = 360})
+    tween:Play()
+    
+    for i = 1, 8 do
+        loadText.Text = "Загрузка" .. string.rep(".", (i % 3) + 1)
+        task.wait(0.4)
+    end
+    
+    loadFrame:Destroy()
+    loginFrame.Visible = true
+end)
+
+getKeyBtn.MouseButton1Click:Connect(function()
+    if setclipboard then
+        setclipboard(keyLink)
+        getKeyBtn.Text = "Скопировано!"
+        task.wait(1)
+        getKeyBtn.Text = "Получить ключ"
+    end
+end)
+
+activateBtn.MouseButton1Click:Connect(function()
+    if keyInput.Text == secureKey then
+        isLoggedIn = true
+        activateBtn.Text = "Успех!"
+        activateBtn.BackgroundColor3 = Color3.new(0, 200, 0)
+        task.wait(0.3)
+        
+        TweenService:Create(blur, TweenInfo.new(0.4), {Size = 0}):Play()
+        local fadeOut = TweenService:Create(mainFrame, TweenInfo.new(0.5), {BackgroundTransparency = 1})
+        fadeOut:Play()
+        fadeOut.Completed:Connect(function()
+            blur:Destroy()
+            loadingGui:Destroy()
+            startMobileScript()
+        end)
+    else
+        failCount = failCount + 1
+        if failCount >= 3 then
+            player:Kick("Неверный ключ 3 раза.")
+        else
+            activateBtn.Text = "Ошибка (" .. failCount .. "/3)"
+            activateBtn.BackgroundColor3 = Color3.new(200, 0, 0)
+            task.wait(1)
+            activateBtn.Text = "Активировать"
+            activateBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+        end
+    end
+end)
+
+RunService.Stepped:Connect(function()
+    if not isLoggedIn and player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+        player.Character.Humanoid.WalkSpeed = 0
+    end
+end)
+
+-- === ОСНОВНОЙ СКРИПТ ДЛЯ ТЕЛЕФОНА ===
+function startMobileScript()
+    local isAiming = false
+    
+    -- === БОЛЬШАЯ КНОПКА ДЛЯ АИМБОТА ===
+    local aimButton = Instance.new("ImageButton", CoreGui)
+    aimButton.Size = UDim2.new(0, 80, 0, 80)
+    aimButton.Position = UDim2.new(1, -95, 1, -95)
+    aimButton.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+    aimButton.Image = "rbxassetid://6031082811" -- круглая иконка
+    aimButton.ScaleType = Enum.ScaleType.Fit
+    Instance.new("UICorner", aimButton).CornerRadius = UDim.new(1, 0)
+    
+    -- Эффект при нажатии
+    local pressTween = TweenService:Create(aimButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(255, 50, 50)})
+    local releaseTween = TweenService:Create(aimButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(0, 120, 255)})
+    
+    aimButton.TouchTap:Connect(function()
+        isAiming = not isAiming
+        if isAiming then
+            pressTween:Play()
+            -- Индикатор что аимбот включен
+            aimButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+        else
+            releaseTween:Play()
+            aimButton.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+        end
+    end)
+    
+    -- Альтернатива: удержание (для тех кому удобнее)
+    aimButton.TouchLongPress:Connect(function()
+        isAiming = true
+        pressTween:Play()
+    end)
+    
+    aimButton.TouchEnd:Connect(function()
+        isAiming = false
+        releaseTween:Play()
+    end)
+    
+    -- === ПОИСК БЛИЖАЙШЕГО ВРАГА ===
+    local function getClosestEnemy()
+        local closest = nil
+        local minDist = math.huge
+        local center = camera.ViewportSize / 2
+        
+        for _, plr in pairs(Players:GetPlayers()) do
+            if plr ~= player and plr.Character and plr.Character:FindFirstChild("Head") then
+                local screenPos, onScreen = camera:WorldToViewportPoint(plr.Character.Head.Position)
+                if onScreen then
+                    local dist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
+                    if dist < minDist then
+                        minDist = dist
+                        closest = plr
+                    end
+                end
+            end
+        end
+        return closest
+    end
+    
+    -- === АИМБОТ ===
+    RunService.RenderStepped:Connect(function()
+        if isAiming then
+            local target = getClosestEnemy()
+            if target and target.Character and target.Character:FindFirstChild("Head") then
+                camera.CFrame = camera.CFrame:Lerp(CFrame.new(camera.CFrame.Position, target.Character.Head.Position), 0.2)
+            end
+        end
+    end)
+    
+    -- === ИНДИКАТОР АИМБОТА ===
+    local indicator = Instance.new("Frame", CoreGui)
+    indicator.Size = UDim2.new(0, 60, 0, 60)
+    indicator.Position = UDim2.new(0.5, -30, 0.5, -30)
+    indicator.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    indicator.BackgroundTransparency = 0.8
+    indicator.Visible = false
+    Instance.new("UICorner", indicator).CornerRadius = UDim.new(1, 0)
+    
+    RunService.RenderStepped:Connect(function()
+        indicator.Visible = isAiming
+        indicator.BackgroundTransparency = isAiming and 0.5 or 0.8
+    end)
+    
+    -- === ESP: БОЛЬШИЕ ГОЛОВЫ ===
+    RunService.RenderStepped:Connect(function()
+        for _, plr in pairs(Players:GetPlayers()) do
+            if plr ~= player and plr.Character and plr.Character:FindFirstChild("Head") then
+                local head = plr.Character.Head
+                head.Size = Vector3.new(5, 5, 5)
+                head.Transparency = 0.3
+                head.Material = Enum.Material.Neon
+                head.Color = Color3.fromRGB(255, 0, 0)
+            end
+        end
+    end)
+    
+    -- === ESP: КВАДРАТЫ НАД ГОЛОВОЙ ===
+    local function createBox(plr)
+        plr.CharacterAdded:Connect(function(char)
+            local root = char:WaitForChild("HumanoidRootPart", 10)
+            if not root then return end
+            
+            local gui = Instance.new("BillboardGui", root)
+            gui.Name = "BoxEsp"
+            gui.AlwaysOnTop = true
+            gui.Size = UDim2.new(3, 0, 4, 0)
+            gui.Adornee = root
+            
+            local frame = Instance.new("Frame", gui)
+            frame.Size = UDim2.new(1, 0, 1, 0)
+            frame.BackgroundTransparency = 1
+            frame.BorderColor3 = Color3.new(1, 1, 1)
+            frame.BorderSizePixel = 2
+        end)
+    end
+    
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr ~= player then createBox(plr) end
+    end
+    Players.PlayerAdded:Connect(createBox)
+    
+    -- === KILL AURA ===
+    local killRange = 20
+    RunService.Stepped:Connect(function()
+        local char = player.Character
+        local tool = char and char:FindFirstChildOfClass("Tool")
+        if tool and char and char:FindFirstChild("HumanoidRootPart") then
+            for _, plr in pairs(Players:GetPlayers()) do
+                if plr ~= player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                    local distance = (char.HumanoidRootPart.Position - plr.Character.HumanoidRootPart.Position).Magnitude
+                    if distance <= killRange then
+                        tool:Activate()
+                        if tool:FindFirstChild("Handle") then
+                            firetouchinterest(plr.Character.HumanoidRootPart, tool.Handle, 0)
+                            firetouchinterest(plr.Character.HumanoidRootPart, tool.Handle, 1)
+                        end
+                    end
+                end
+            end
+        end
+    end)
+    
+    -- === ПИНГ В ПРАВОМ ВЕРХНЕМ УГЛУ ===
+    local pingFrame = Instance.new("Frame", CoreGui)
+    pingFrame.Size = UDim2.new(0, 100, 0, 30)
+    pingFrame.Position = UDim2.new(1, -110, 0, 10)
+    pingFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    pingFrame.BackgroundTransparency = 0.5
+    Instance.new("UICorner", pingFrame).CornerRadius = UDim.new(0, 8)
+    
+    local pingText = Instance.new("TextLabel", pingFrame)
+    pingText.Size = UDim2.new(1, 0, 1, 0)
+    pingText.BackgroundTransparency = 1
+    pingText.TextColor3 = Color3.new(1, 1, 1)
+    pingText.TextSize = 14
+    pingText.Font = Enum.Font.GothamBold
+    pingText.Text = "Пинг: --"
+    
+    RunService.RenderStepped:Connect(function()
+        local ping = math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue())
+        pingText.Text = "📶 " .. ping .. " ms"
+        if ping < 80 then pingText.TextColor3 = Color3.new(0, 255, 0)
+        elseif ping < 150 then pingText.TextColor3 = Color3.new(255, 255, 0)
+        else pingText.TextColor3 = Color3.new(255, 0, 0) end
+    end)
+    
+    -- === МАРКЕРЫ СМЕРТИ ===
+    Players.PlayerRemoving:Connect(function(plr)
+        if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+            local marker = Instance.new("Part")
+            marker.Shape = Enum.PartType.Ball
+            marker.Size = Vector3.new(2.5, 2.5, 2.5)
+            marker.Position = plr.Character.HumanoidRootPart.Position
+            marker.Anchored = true
+            marker.CanCollide = false
+            marker.Color = Color3.new(1, 1, 1)
+            marker.Material = Enum.Material.Neon
+            marker.Transparency = 0.4
+            marker.Parent = workspace
+            
+            local highlight = Instance.new("Highlight", marker)
+            highlight.FillColor = Color3.new(1, 1, 1)
+            highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+            
+            game:GetService("Debris"):AddItem(marker, 10)
+        end
+    end)
+    
+    -- === УВЕДОМЛЕНИЕ ===
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "Чит для телефона",
+        Text = "Нажми на синюю кнопку для аимбота | Kill Aura активна",
+        Duration = 4
+    })
+end
