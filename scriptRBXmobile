@@ -1402,7 +1402,125 @@ Players.PlayerRemoving:Connect(function(p)
         lookLines[p] = nil
     end
 end)
+--[[
+    HP BAR для XENO MOBILE (ФИНАЛЬНЫЙ ФИКС)
+    Показывает у всех игроков
+]]
 
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LP = Players.LocalPlayer
+
+-- ===== НАСТРОЙКИ =====
+local BarWidth = 50
+local BarHeight = 4
+local Offset = 2.5
+
+-- ===== ФУНКЦИЯ СОЗДАНИЯ HP =====
+local function setupHP(char, player)
+    -- Ждём загрузки
+    local head = nil
+    local hum = nil
+    
+    for _ = 1, 200 do
+        head = char:FindFirstChild("Head")
+        hum = char:FindFirstChildOfClass("Humanoid")
+        if head and hum then break end
+        task.wait(0.05)
+    end
+    
+    if not head or not hum then return end
+    
+    -- Удаляем все старые HP бары на этом персонаже
+    for _, v in ipairs(char:GetDescendants()) do
+        if v:IsA("BillboardGui") and v.Name == "HP_Bar" then
+            pcall(function() v:Destroy() end)
+        end
+    end
+    
+    -- Создаём новый
+    local bill = Instance.new("BillboardGui")
+    bill.Name = "HP_Bar"
+    bill.Adornee = head
+    bill.Size = UDim2.new(0, BarWidth, 0, BarHeight + 2)
+    bill.StudsOffset = Vector3.new(0, Offset, 0)
+    bill.AlwaysOnTop = true
+    bill.Parent = head
+    
+    -- Фон
+    local bg = Instance.new("Frame", bill)
+    bg.Size = UDim2.new(1, 0, 0, BarHeight)
+    bg.Position = UDim2.new(0, 0, 0, 1)
+    bg.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+    bg.BorderSizePixel = 0
+    
+    -- Бар
+    local bar = Instance.new("Frame", bg)
+    local function updateBar(health)
+        pcall(function()
+            local p = health / hum.MaxHealth
+            bar.Size = UDim2.new(p, 0, 1, 0)
+            bar.BackgroundColor3 = p > 0.6 and Color3.new(0.2, 1, 0.2) 
+                or p > 0.3 and Color3.new(1, 0.8, 0) 
+                or Color3.new(1, 0.2, 0.2)
+        end)
+    end
+    
+    updateBar(hum.Health)
+    
+    hum.HealthChanged:Connect(updateBar)
+    
+    -- Удаляем при смерти
+    hum.Died:Connect(function()
+        pcall(function() bill:Destroy() end)
+    end)
+end
+
+-- ===== ПРИМЕНЕНИЕ КО ВСЕМ =====
+local function addToPlayer(player)
+    if player == LP then return end
+    
+    -- Текущий персонаж
+    if player.Character then
+        task.spawn(function() setupHP(player.Character, player) end)
+    end
+    
+    -- Новый персонаж
+    player.CharacterAdded:Connect(function(char)
+        task.wait(0.3)
+        setupHP(char, player)
+    end)
+end
+
+-- Все существующие
+for _, p in ipairs(Players:GetPlayers()) do
+    addToPlayer(p)
+end
+
+-- Новые
+Players.PlayerAdded:Connect(addToPlayer)
+
+-- Цикл проверки каждые 3 сек (исправляет пропавшие)
+task.spawn(function()
+    while true do
+        task.wait(3)
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= LP and p.Character then
+                local char = p.Character
+                local hasBar = false
+                for _, v in ipairs(char:GetDescendants()) do
+                    if v:IsA("BillboardGui") and v.Name == "HP_Bar" then
+                        hasBar = true
+                        break
+                    end
+                end
+                if not hasBar then
+                    task.spawn(function() setupHP(char, p) end)
+                end
+            end
+        end
+    end
+end)
 --[[
     DEATH MARKER + ИМЯ для XENO MOBILE
     Точка смерти + имя игрока
