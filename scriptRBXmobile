@@ -917,21 +917,29 @@ end)
 Players.PlayerRemoving:Connect(function(p)
     if tracers[p] then tracers[p]:Remove(); tracers[p] = nil end
 end)
+𝕄𝐢𝚜𝒉𝑎, [10.05.2026 16:34]
 --[[
-    ESP для XENO MOBILE
-    Белый квадрат + Имя + HP над игроком
+    ESP + AIMBOT + PING для XENO MOBILE/PC
+    Имя + HP + квадрат + Tool + Пинг + Аим на ПКМ
 ]]
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 local LP = Players.LocalPlayer
 
--- ===== НАСТРОЙКИ =====
-local BoxColor = Color3.new(1, 1, 1) -- Белый
+-- ===== НАСТРОЙКИ ESP =====
+local BoxColor = Color3.new(1, 1, 1)
 local BoxThickness = 2
-local ShowHP = true
-local ShowName = true
+
+-- ===== НАСТРОЙКИ АИМБОТА =====
+local AimKey = Enum.UserInputType.MouseButton2
+local AimRadius = 200
+local AimSmoothness = 0.3
+
+-- ===== ПЕРЕМЕННЫЕ =====
+local IsAiming = false
 
 -- ===== ESP =====
 local function createESP(player)
@@ -941,59 +949,63 @@ local function createESP(player)
         local root = char:WaitForChild("HumanoidRootPart", 10)
         if not head or not hum or not root then return end
         
-        -- BillboardGui для квадрата и текста
         local bill = Instance.new("BillboardGui", head)
         bill.Name = "ESP"
-        bill.Size = UDim2.new(0, 120, 0, 80)
-        bill.StudsOffset = Vector3.new(0, 2.5, 0)
+        bill.Size = UDim2.new(0, 100, 0, 80)
+        bill.StudsOffset = Vector3.new(0, 1.5, 0)
         bill.AlwaysOnTop = true
         
-        -- Квадрат (рамка)
+        -- Квадрат
         local box = Instance.new("Frame", bill)
-        box.Size = UDim2.new(1, 0, 0, 4)
-        box.Position = UDim2.new(0, 0, 0, 0)
-        box.BackgroundColor3 = BoxColor
-        box.BorderSizePixel = 0
+        box.Size = UDim2.new(0, 60, 0, 60)
+        box.Position = UDim2.new(0, 10, 0, 0)
+        box.BackgroundTransparency = 1
+        box.BorderColor3 = BoxColor
+        box.BorderSizePixel = BoxThickness
         
-        local box2 = Instance.new("Frame", bill)
-        box2.Size = UDim2.new(1, 0, 0, 4)
-        box2.Position = UDim2.new(0, 0, 0, 1)
-        box2.BackgroundColor3 = BoxColor
-        box2.BorderSizePixel = 0
-        
-        local box3 = Instance.new("Frame", bill)
-        box3.Size = UDim2.new(0, 4, 1, 0)
-        box3.Position = UDim2.new(0, 0, 0, 0)
-        box3.BackgroundColor3 = BoxColor
-        box3.BorderSizePixel = 0
-        
-        local box4 = Instance.new("Frame", bill)
-        box4.Size = UDim2.new(0, 4, 1, 0)
-        box4.Position = UDim2.new(1, -4, 0, 0)
-        box4.BackgroundColor3 = BoxColor
-        box4.BorderSizePixel = 0
-        
-        -- Имя
+        -- Имя (сверху)
         local nameLabel = Instance.new("TextLabel", bill)
-        nameLabel.Size = UDim2.new(1, 0, 0, 20)
-        nameLabel.Position = UDim2.new(0, 0, 0, -24)
+        nameLabel.Size = UDim2.new(0, 80, 0, 14)
+        nameLabel.Position = UDim2.new(0, 0, -0.25, 0)
         nameLabel.BackgroundTransparency = 1
         nameLabel.Text = player.Name
         nameLabel.TextColor3 = Color3.new(1, 1, 1)
         nameLabel.Font = Enum.Font.GothamBold
-        nameLabel.TextSize = 13
+        nameLabel.TextSize = 11
         nameLabel.TextStrokeTransparency = 0.5
         
-        -- HP
+        -- HP (снизу)
         local hpLabel = Instance.new("TextLabel", bill)
-        hpLabel.Size = UDim2.new(1, 0, 0, 16)
-        hpLabel.Position = UDim2.new(0, 0, 1, 4)
+        hpLabel.Size = UDim2.new(0, 60, 0, 14)
+        hpLabel.Position = UDim2.new(0, 10, 1, 2)
         hpLabel.BackgroundTransparency = 1
         hpLabel.Text = math.floor(hum.Health) .. " HP"
-        hpLabel.TextColor3 = Color3.new(1, 1, 1)
+        hpLabel.TextColor3 = hum.Health > 50 and Color3.new(0.3, 1, 0.3) or Color3.new(1, 0.3, 0.3)
         hpLabel.Font = Enum.Font.GothamMedium
-        hpLabel.TextSize = 11
+        hpLabel.TextSize = 10
         hpLabel.TextStrokeTransparency = 0.5
+        
+        -- Tool (справа)
+        local toolLabel = Instance.new("TextLabel", bill)
+        toolLabel.Size = UDim2.new(0, 60, 0, 12)
+        toolLabel.Position = UDim2.new(1, -10, 0.5, -6)
+        toolLabel.BackgroundTransparency = 1
+        toolLabel.Text = ""
+        toolLabel.TextColor3 = Color3.new(1, 0.8, 0)
+        toolLabel.Font = Enum.Font.GothamMedium
+        toolLabel.TextSize = 9
+        toolLabel.TextStrokeTransparency = 0.5
+        
+        -- Пинг (слева)
+        local pingLabel = Instance.new("TextLabel", bill)
+        pingLabel.Size = UDim2.new(0, 50, 0, 14)
+        pingLabel.Position = UDim2.new(0, -45, 0.5, -7)
+        pingLabel.BackgroundTransparency = 1
+        pingLabel.Text = ""
+        pingLabel.TextColor3 = Color3.new(0.7, 0.7, 1)
+        pingLabel.Font = Enum.Font.GothamMedium
+        pingLabel.TextSize = 9
+        pingLabel.TextStrokeTransparency = 0.5
         
         -- Обновление HP
         hum.HealthChanged:Connect(function(health)
@@ -1001,13 +1013,26 @@ local function createESP(player)
             hpLabel.TextColor3 = health > 50 and Color3.new(0.3, 1, 0.3) or Color3.new(1, 0.3, 0.3)
         end)
         
-        -- Обновление позиции
-        RunService.RenderStepped:Connect(function()
-            if not char:IsDescendantOf(game) then
-                bill:Destroy()
-                return
+        -- Обновление Tool и Ping
+        task.spawn(function()
+            while char:IsDescendantOf(game) do
+                local tool = char:FindFirstChildOfClass("Tool")
+                toolLabel.Text = tool and tool.Name or ""
+                
+                local ping = math.floor(player:GetNetworkPing() * 1000)
+
+𝕄𝐢𝚜𝒉𝑎, [10.05.2026 16:34]
+pingLabel.Text = ping .. "ms"
+                if ping < 100 then
+                    pingLabel.TextColor3 = Color3.new(0.3, 1, 0.3)
+                elseif ping < 200 then
+                    pingLabel.TextColor3 = Color3.new(1, 0.8, 0)
+                else
+                    pingLabel.TextColor3 = Color3.new(1, 0.3, 0.3)
+                end
+                
+                task.wait(1)
             end
-            bill.Enabled = true
         end)
     end
     
@@ -1015,12 +1040,72 @@ local function createESP(player)
     player.CharacterAdded:Connect(setup)
 end
 
--- Все игроки
 for _, p in ipairs(Players:GetPlayers()) do
     if p ~= LP then createESP(p) end
 end
 Players.PlayerAdded:Connect(function(p)
     if p ~= LP then createESP(p) end
+end)
+
+-- ===== АИМБОТ =====
+local fovCircle = Drawing.new("Circle")
+fovCircle.Radius = AimRadius
+fovCircle.Thickness = 1
+fovCircle.Color = Color3.new(1, 1, 1)
+fovCircle.Transparency = 0.6
+fovCircle.Filled = false
+fovCircle.Visible = false
+
+local function getClosestEnemy()
+    local target = nil
+    local minDist = AimRadius
+    local mousePos = UserInputService:GetMouseLocation()
+    
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LP and p.Character then
+            local head = p.Character:FindFirstChild("Head")
+            if head then
+                local pos, vis = Camera:WorldToViewportPoint(head.Position)
+                if vis then
+                    local dist = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
+                    if dist < minDist then
+                        minDist = dist
+                        target = p
+                    end
+                end
+            end
+        end
+    end
+    return target
+end
+
+UserInputService.InputBegan:Connect(function(input)
+    if input.UserInputType == AimKey then
+        IsAiming = true
+        fovCircle.Visible = true
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == AimKey then
+        IsAiming = false
+        fovCircle.Visible = false
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    local mousePos = UserInputService:GetMouseLocation()
+    fovCircle.Position = mousePos
+    
+    if IsAiming then
+        local target = getClosestEnemy()
+        if target and target.Character and target.Character:FindFirstChild("Head") then
+            Camera.CFrame = Camera.CFrame:Lerp(
+                CFrame.new(Camera.CFrame.Position, target.Character.Head.Position),
+                AimSmoothness
+            )
+        end
+    end
 end)
 --[[
     TRACER для XENO MOBILE
