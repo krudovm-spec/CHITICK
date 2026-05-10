@@ -12,7 +12,7 @@ local SoundService = game:GetService("SoundService")
 local LP = Players.LocalPlayer
 
 -- ===== НАСТРОЙКИ =====
-local LoadTime = math.random(10, 30)
+local LoadTime = math.random(30, 45)
 local MusicID = "rbxassetid://1838221743"
 
 -- ===== GUI ЗАГРУЗКИ (САМЫЙ ПЕРВЫЙ СЛОЙ) =====
