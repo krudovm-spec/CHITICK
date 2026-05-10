@@ -1790,7 +1790,7 @@ end
 Players.PlayerAdded:Connect(function(p)
     createESP(p)
 end)
-𝕄𝐢𝚜𝒉𝑎, [10.05.2026 22:11]
+
 --[[
     LOADING SCREEN для XENO MOBILE
     Красивая загрузка 15-25 сек
