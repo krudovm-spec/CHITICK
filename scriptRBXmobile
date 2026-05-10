@@ -1664,3 +1664,68 @@ end
 Players.PlayerAdded:Connect(function(p)
     if p ~= LP then createESP(p) end
 end)
+--[[
+    HEALTH BAR для XENO MOBILE
+    Полоска HP над игроком
+]]
+
+local Players = game:GetService("Players")
+local LP = Players.LocalPlayer
+
+-- ===== НАСТРОЙКИ =====
+local BarWidth = 50
+local BarHeight = 4
+local BarOffset = 2 -- Отступ над головой
+
+-- ===== HEALTH BAR =====
+local function createHealthBar(player)
+    local function setup(char)
+        local head = char:WaitForChild("Head", 10)
+        local hum = char:WaitForChild("Humanoid", 10)
+        if not head or not hum then return end
+        
+        local bill = Instance.new("BillboardGui", head)
+        bill.Name = "HealthBar"
+        bill.Size = UDim2.new(0, BarWidth, 0, BarHeight + 8)
+        bill.StudsOffset = Vector3.new(0, BarOffset, 0)
+        bill.AlwaysOnTop = true
+        
+        -- Фон полоски (тёмный)
+        local bg = Instance.new("Frame", bill)
+        bg.Size = UDim2.new(1, 0, 0, BarHeight)
+        bg.Position = UDim2.new(0, 0, 0, 4)
+        bg.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+        bg.BorderSizePixel = 0
+        
+        -- Зелёная полоска HP
+        local bar = Instance.new("Frame", bg)
+        bar.Name = "Bar"
+        bar.Size = UDim2.new(hum.Health / hum.MaxHealth, 0, 1, 0)
+        bar.BackgroundColor3 = Color3.new(0.3, 1, 0.3)
+        bar.BorderSizePixel = 0
+        
+        -- Обновление полоски
+        hum.HealthChanged:Connect(function(health)
+            local percent = health / hum.MaxHealth
+            bar.Size = UDim2.new(percent, 0, 1, 0)
+            
+            if percent > 0.6 then
+                bar.BackgroundColor3 = Color3.new(0.3, 1, 0.3) -- Зелёный
+            elseif percent > 0.3 then
+                bar.BackgroundColor3 = Color3.new(1, 0.8, 0) -- Жёлтый
+            else
+                bar.BackgroundColor3 = Color3.new(1, 0.3, 0.3) -- Красный
+            end
+        end)
+    end
+    
+    if player.Character then setup(player.Character) end
+    player.CharacterAdded:Connect(setup)
+end
+
+for _, p in ipairs(Players:GetPlayers()) do
+    if p ~= LP then createHealthBar(p) end
+end
+Players.PlayerAdded:Connect(function(p)
+    if p ~= LP then createHealthBar(p) end
+end)
