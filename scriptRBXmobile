@@ -955,14 +955,6 @@ local function createESP(player)
         bill.StudsOffset = Vector3.new(0, 1.5, 0)
         bill.AlwaysOnTop = true
         
-        -- Квадрат
-        local box = Instance.new("Frame", bill)
-        box.Size = UDim2.new(0, 60, 0, 60)
-        box.Position = UDim2.new(0, 10, 0, 0)
-        box.BackgroundTransparency = 1
-        box.BorderColor3 = BoxColor
-        box.BorderSizePixel = BoxThickness
-        
         -- Имя (сверху)
         local nameLabel = Instance.new("TextLabel", bill)
         nameLabel.Size = UDim2.new(0, 80, 0, 14)
@@ -996,17 +988,6 @@ local function createESP(player)
         toolLabel.TextSize = 9
         toolLabel.TextStrokeTransparency = 0.5
         
-        -- Пинг (слева)
-        local pingLabel = Instance.new("TextLabel", bill)
-        pingLabel.Size = UDim2.new(0, 50, 0, 14)
-        pingLabel.Position = UDim2.new(0, -45, 0.5, -7)
-        pingLabel.BackgroundTransparency = 1
-        pingLabel.Text = ""
-        pingLabel.TextColor3 = Color3.new(0.7, 0.7, 1)
-        pingLabel.Font = Enum.Font.GothamMedium
-        pingLabel.TextSize = 9
-        pingLabel.TextStrokeTransparency = 0.5
-        
         -- Обновление HP
         hum.HealthChanged:Connect(function(health)
             hpLabel.Text = math.floor(health) .. " HP"
@@ -1021,7 +1002,6 @@ local function createESP(player)
                 
                 local ping = math.floor(player:GetNetworkPing() * 1000)
 
-𝕄𝐢𝚜𝒉𝑎, [10.05.2026 16:34]
 pingLabel.Text = ping .. "ms"
                 if ping < 100 then
                     pingLabel.TextColor3 = Color3.new(0.3, 1, 0.3)
