@@ -902,21 +902,6 @@ Players.PlayerRemoving:Connect(function(p)
     if tracers[p] then tracers[p]:Remove(); tracers[p] = nil end
 end)
 
---[[
-    ESP + AIMBOT + PING для XENO MOBILE/PC
-    Имя + HP + квадрат + Tool + Пинг + Аим на ПКМ
-]]
-
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local Camera = workspace.CurrentCamera
-local LP = Players.LocalPlayer
-
--- ===== НАСТРОЙКИ ESP =====
-local BoxColor = Color3.new(1, 1, 1)
-local BoxThickness = 2
-
 -- ===== НАСТРОЙКИ АИМБОТА =====
 local AimKey = Enum.UserInputType.MouseButton2
 local AimRadius = 200
@@ -925,42 +910,7 @@ local AimSmoothness = 0.3
 -- ===== ПЕРЕМЕННЫЕ =====
 local IsAiming = false
 
--- ===== ESP =====
-local function createESP(player)
-    local function setup(char)
-        local head = char:WaitForChild("Head", 10)
-        local hum = char:WaitForChild("Humanoid", 10)
-        local root = char:WaitForChild("HumanoidRootPart", 10)
-        if not head or not hum or not root then return end
-        
-        local bill = Instance.new("BillboardGui", head)
-        bill.Name = "ESP"
-        bill.Size = UDim2.new(0, 100, 0, 80)
-        bill.StudsOffset = Vector3.new(0, 1.5, 0)
-        bill.AlwaysOnTop = true
-        
-        -- Имя (сверху)
-        local nameLabel = Instance.new("TextLabel", bill)
-        nameLabel.Size = UDim2.new(0, 80, 0, 14)
-        nameLabel.Position = UDim2.new(0, 0, -0.25, 0)
-        nameLabel.BackgroundTransparency = 1
-        nameLabel.Text = player.Name
-        nameLabel.TextColor3 = Color3.new(1, 1, 1)
-        nameLabel.Font = Enum.Font.GothamBold
-        nameLabel.TextSize = 11
-        nameLabel.TextStrokeTransparency = 0.5
-        
-        -- HP (снизу)
-        local hpLabel = Instance.new("TextLabel", bill)
-        hpLabel.Size = UDim2.new(0, 60, 0, 14)
-        hpLabel.Position = UDim2.new(0, 10, 1, 2)
-        hpLabel.BackgroundTransparency = 1
-        hpLabel.Text = math.floor(hum.Health) .. " HP"
-        hpLabel.TextColor3 = hum.Health > 50 and Color3.new(0.3, 1, 0.3) or Color3.new(1, 0.3, 0.3)
-        hpLabel.Font = Enum.Font.GothamMedium
-        hpLabel.TextSize = 10
-        hpLabel.TextStrokeTransparency = 0.5
-        
+
         -- Tool (справа)
         local toolLabel = Instance.new("TextLabel", bill)
         toolLabel.Size = UDim2.new(0, 60, 0, 12)
