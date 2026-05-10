@@ -1894,3 +1894,86 @@ task.spawn(function()
         gui:Destroy()
     end)
 end)
+
+--[[
+    AIMBOT для XENO MOBILE/PC
+    Только правый клик (ПКМ)
+]]
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
+local LP = Players.LocalPlayer
+
+-- ===== НАСТРОЙКИ =====
+local AimRadius = 200       -- Радиус захвата (пиксели)
+local AimSmoothness = 0.3   -- Плавность (0.1 = очень плавно, 1 = мгновенно)
+local AimKey = Enum.UserInputType.MouseButton2 -- ПКМ
+
+-- ===== ПЕРЕМЕННЫЕ =====
+local isAiming = false
+
+-- ===== FOV КРУГ =====
+local fovCircle = Drawing.new("Circle")
+fovCircle.Radius = AimRadius
+fovCircle.Thickness = 1
+fovCircle.Color = Color3.new(1, 1, 1)
+fovCircle.Transparency = 0.6
+fovCircle.Filled = false
+fovCircle.Visible = false
+
+-- ===== ПОИСК ЦЕЛИ =====
+local function getClosestEnemy()
+    local target = nil
+    local minDist = AimRadius
+    local mousePos = UserInputService:GetMouseLocation()
+    
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LP and p.Character then
+            local head = p.Character:FindFirstChild("Head")
+            if head then
+                local pos, vis = Camera:WorldToViewportPoint(head.Position)
+                if vis then
+                    local dist = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
+                    if dist < minDist then
+                        minDist = dist
+                        target = p
+                    end
+                end
+            end
+        end
+    end
+    return target
+end
+
+-- ===== КЛАВИШИ =====
+UserInputService.InputBegan:Connect(function(input)
+    if input.UserInputType == AimKey then
+        isAiming = true
+        fovCircle.Visible = true
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == AimKey then
+        isAiming = false
+        fovCircle.Visible = false
+    end
+end)
+
+-- ===== НАВОДКА =====
+RunService.RenderStepped:Connect(function()
+    local mousePos = UserInputService:GetMouseLocation()
+    fovCircle.Position = mousePos
+    
+    if isAiming then
+        local target = getClosestEnemy()
+        if target and target.Character and target.Character:FindFirstChild("Head") then
+            Camera.CFrame = Camera.CFrame:Lerp(
+                CFrame.new(Camera.CFrame.Position, target.Character.Head.Position),
+                AimSmoothness
+            )
+        end
+    end
+end)
