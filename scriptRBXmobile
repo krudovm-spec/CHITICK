@@ -516,22 +516,6 @@ function StartScript()
         end)
     end
     
-    -- Big Heads
-    if Settings.BIG_HEADS then
-        Services.RunService.RenderStepped:Connect(function()
-            for _, p in ipairs(Services.Players:GetPlayers()) do
-                if p ~= LP and p.Character then
-                    local head = p.Character:FindFirstChild("Head")
-                    if head then
-                        head.Size = Vector3.new(HeadSize, HeadSize, HeadSize)
-                        head.Transparency = 0.3
-                        head.CanCollide = false
-                    end
-                end
-            end
-        end)
-    end
-    
     -- Death Markers
     if Settings.DEATH_MARKERS then
         local function addDeathMarker(character)
@@ -1291,7 +1275,7 @@ local LP = Players.LocalPlayer
 -- ===== НАСТРОЙКИ =====
 local TracerColor = Color3.new(1, 1, 1)
 local TracerThickness = 1
-local TracerTransparency = 0.5
+local TracerTransparency = 1
 
 -- ===== TRACER'Ы =====
 local tracers = {}
@@ -1556,59 +1540,6 @@ divider.Size = UDim2.new(1, -16, 0, 1)
 divider.Position = UDim2.new(0, 8, 0, 202)
 divider.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
 divider.BorderSizePixel = 0
-
--- Заголовок КИК
-local kickTitle = Instance.new("TextLabel", menu)
-kickTitle.Size = UDim2.new(1, 0, 0, 18)
-kickTitle.Position = UDim2.new(0, 0, 0, 208)
-kickTitle.Text = "КИК ИГРОКА"
-kickTitle.TextColor3 = Color3.new(1, 0.3, 0.3)
-kickTitle.Font = Enum.Font.GothamBold
-kickTitle.TextSize = 11
-kickTitle.BackgroundTransparency = 1
-
--- Поле ввода имени
-local kickInput = Instance.new("TextBox", menu)
-kickInput.Size = UDim2.new(1, -16, 0, 32)
-kickInput.Position = UDim2.new(0, 8, 0, 228)
-kickInput.PlaceholderText = "Имя игрока..."
-kickInput.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
-kickInput.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-kickInput.TextColor3 = Color3.new(1, 1, 1)
-kickInput.Font = Enum.Font.GothamMedium
-kickInput.TextSize = 12
-kickInput.Text = ""
-kickInput.BorderSizePixel = 0
-Instance.new("UICorner", kickInput).CornerRadius = UDim.new(0, 6)
-
--- Кнопка КИК
-local kickBtn = Instance.new("TextButton", menu)
-kickBtn.Size = UDim2.new(1, -16, 0, 32)
-kickBtn.Position = UDim2.new(0, 8, 0, 266)
-kickBtn.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
-kickBtn.Text = "КИКНУТЬ"
-kickBtn.TextColor3 = Color3.new(1, 1, 1)
-kickBtn.Font = Enum.Font.GothamBold
-kickBtn.TextSize = 12
-kickBtn.BorderSizePixel = 0
-Instance.new("UICorner", kickBtn).CornerRadius = UDim.new(0, 6)
-
-kickBtn.MouseButton1Click:Connect(function()
-    if kickInput.Text ~= "" then
-        kickPlayer(kickInput.Text)
-        kickInput.Text = ""
-    end
-end)
-
--- Обратная связь
-local kickFeedback = Instance.new("TextLabel", menu)
-kickFeedback.Size = UDim2.new(1, 0, 0, 16)
-kickFeedback.Position = UDim2.new(0, 0, 0, 300)
-kickFeedback.Text = ""
-kickFeedback.TextColor3 = Color3.new(1, 1, 1)
-kickFeedback.Font = Enum.Font.GothamMedium
-kickFeedback.TextSize = 10
-kickFeedback.BackgroundTransparency = 1
 
 -- ===== FPS =====
 fpsLabel = Instance.new("TextLabel", gui)
