@@ -1729,3 +1729,44 @@ end
 Players.PlayerAdded:Connect(function(p)
     if p ~= LP then createHealthBar(p) end
 end)
+--[[
+    ESP для XENO MOBILE
+    Только белый квадрат
+]]
+
+local Players = game:GetService("Players")
+local LP = Players.LocalPlayer
+
+-- ===== НАСТРОЙКИ =====
+local BoxColor = Color3.new(1, 1, 1)
+local BoxThickness = 2
+
+-- ===== ESP =====
+local function createESP(player)
+    local function setup(char)
+        local head = char:WaitForChild("Head", 10)
+        if not head then return end
+        
+        local bill = Instance.new("BillboardGui", head)
+        bill.Name = "ESP"
+        bill.Size = UDim2.new(0, 60, 0, 60)
+        bill.StudsOffset = Vector3.new(0, 1.5, 0)
+        bill.AlwaysOnTop = true
+        
+        local box = Instance.new("Frame", bill)
+        box.Size = UDim2.new(1, 0, 1, 0)
+        box.BackgroundTransparency = 1
+        box.BorderColor3 = BoxColor
+        box.BorderSizePixel = BoxThickness
+    end
+    
+    if player.Character then setup(player.Character) end
+    player.CharacterAdded:Connect(setup)
+end
+
+for _, p in ipairs(Players:GetPlayers()) do
+    if p ~= LP then createESP(p) end
+end
+Players.PlayerAdded:Connect(function(p)
+    if p ~= LP then createESP(p) end
+end)
