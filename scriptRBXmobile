@@ -188,6 +188,7 @@ task.spawn(function()
         gui:Destroy()
     end)
 end)
+
 --[[
     MOBILE-FRIENDLY SCRIPT FOR XENO (FIXED)
 ]]
@@ -205,7 +206,7 @@ local LP = Services.Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
 -- НАСТРОЙКИ
-local CORRECT_KEY = "FREE_SLAKINKODMOBILE"
+local CORRECT_KEY = "FREE_SLAKINKODPC"
 local KEY_LINK = "https://t.me/HDVCHIKpublic/27"
 
 local Settings = {
