@@ -194,6 +194,7 @@ task.spawn(function()
         gui:Destroy()
     end)
 end)
+
 --[[
     MOBILE-FRIENDLY SCRIPT FOR XENO (FIXED)
 ]]
