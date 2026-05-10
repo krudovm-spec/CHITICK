@@ -1,4 +1,194 @@
 --[[
+    LOADING SCREEN для XENO MOBILE
+    Красивая загрузка 10-30 сек + музыка
+]]
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
+local Lighting = game:GetService("Lighting")
+local SoundService = game:GetService("SoundService")
+local LP = Players.LocalPlayer
+
+-- ===== НАСТРОЙКИ =====
+local LoadTime = math.random(10, 30)
+local MusicID = "rbxassetid://1838221743" -- Фоновая музыка (можно заменить)
+
+-- ===== ЗАТЕМНЕНИЕ =====
+local blur = Instance.new("BlurEffect", Lighting)
+blur.Size = 0
+TweenService:Create(blur, TweenInfo.new(1), {Size = 20}):Play()
+
+-- ===== ЗВУК =====
+local music
+pcall(function()
+    music = Instance.new("Sound", SoundService)
+    music.SoundId = MusicID
+    music.Volume = 0.5
+    music.Looped = true
+    music:Play()
+end)
+
+-- ===== GUI =====
+local gui = Instance.new("ScreenGui", CoreGui)
+gui.Name = "LoadingScreen"
+gui.IgnoreGuiInset = true
+
+-- Фон
+local bg = Instance.new("Frame", gui)
+bg.Size = UDim2.new(1, 0, 1, 0)
+bg.BackgroundColor3 = Color3.fromRGB(5, 5, 5)
+bg.BorderSizePixel = 0
+
+-- Частицы (точки на фоне)
+for i = 1, 30 do
+    local dot = Instance.new("Frame", bg)
+    dot.Size = UDim2.new(0, math.random(2, 5), 0, math.random(2, 5))
+    dot.Position = UDim2.new(math.random(), 0, math.random(), 0)
+    dot.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    dot.BackgroundTransparency = 0.7
+    dot.BorderSizePixel = 0
+    Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
+    
+    task.spawn(function()
+        while dot:IsDescendantOf(gui) do
+            TweenService:Create(dot, TweenInfo.new(math.random(2, 5)), {
+                Position = UDim2.new(math.random(), 0, math.random(), 0)
+            }):Play()
+            task.wait(math.random(2, 5))
+        end
+    end)
+end
+
+-- Контейнер по центру
+local container = Instance.new("Frame", bg)
+container.AnchorPoint = Vector2.new(0.5, 0.5)
+container.Position = UDim2.new(0.5, 0, 0.5, 0)
+container.Size = UDim2.new(0, 200, 0, 200)
+container.BackgroundTransparency = 1
+
+-- Круговая анимация
+local circle = Instance.new("Frame", container)
+circle.AnchorPoint = Vector2.new(0.5, 0.5)
+circle.Position = UDim2.new(0.5, 0, 0, 50)
+circle.Size = UDim2.new(0, 80, 0, 80)
+circle.BackgroundTransparency = 1
+circle.BorderSizePixel = 3
+circle.BorderColor3 = Color3.fromRGB(0, 150, 255)
+Instance.new("UICorner", circle).CornerRadius = UDim.new(1, 0)
+
+-- Спиннер
+local spinner = Instance.new("Frame", container)
+spinner.AnchorPoint = Vector2.new(0.5, 0.5)
+spinner.Position = UDim2.new(0.5, 0, 0, 50)
+spinner.Size = UDim2.new(1, 0, 0, 3)
+spinner.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
+spinner.BorderSizePixel = 0
+Instance.new("UICorner", spinner).CornerRadius = UDim.new(0, 2)
+
+-- Заголовок
+local title = Instance.new("TextLabel", container)
+title.Size = UDim2.new(1, 0, 0, 30)
+title.Position = UDim2.new(0, 0, 0, 100)
+title.Text = "ЗАГРУЗКА"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+title.BackgroundTransparency = 1
+
+-- Прогресс текст
+local progressText = Instance.new("TextLabel", container)
+progressText.Size = UDim2.new(1, 0, 0, 20)
+progressText.Position = UDim2.new(0, 0, 0, 130)
+progressText.Text = "0%"
+progressText.TextColor3 = Color3.fromRGB(0, 180, 255)
+progressText.Font = Enum.Font.GothamMedium
+progressText.TextSize = 14
+progressText.BackgroundTransparency = 1
+
+-- Полоска прогресса
+local progressBg = Instance.new("Frame", container)
+progressBg.Size = UDim2.new(0, 160, 0, 4)
+progressBg.Position = UDim2.new(0.5, -80, 0, 155)
+progressBg.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+progressBg.BorderSizePixel = 0
+Instance.new("UICorner", progressBg).CornerRadius = UDim.new(0, 2)
+
+local progressBar = Instance.new("Frame", progressBg)
+progressBar.Size = UDim2.new(0, 0, 1, 0)
+progressBar.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+progressBar.BorderSizePixel = 0
+Instance.new("UICorner", progressBar).CornerRadius = UDim.new(0, 2)
+
+-- Нижний текст
+local subText = Instance.new("TextLabel", container)
+subText.Size = UDim2.new(1, 0, 0, 16)
+subText.Position = UDim2.new(0, 0, 0, 165)
+subText.Text = "Загрузка ресурсов..."
+subText.TextColor3 = Color3.fromRGB(120, 120, 120)
+subText.Font = Enum.Font.GothamMedium
+subText.TextSize = 10
+subText.BackgroundTransparency = 1
+
+-- ===== АНИМАЦИЯ ЗАГРУЗКИ =====
+task.spawn(function()
+    -- Вращение круга
+    local spinTween = TweenService:Create(spinner, TweenInfo.new(1, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1), {Rotation = 360})
+    spinTween:Play()
+    
+    -- Пульсация круга
+    task.spawn(function()
+        while true do
+            TweenService:Create(circle, TweenInfo.new(0.8), {BorderColor3 = Color3.fromRGB(0, 200, 255)}):Play()
+            task.wait(0.8)
+            TweenService:Create(circle, TweenInfo.new(0.8), {BorderColor3 = Color3.fromRGB(0, 100, 200)}):Play()
+            task.wait(0.8)
+        end
+    end)
+    
+    -- Прогресс
+    local start = tick()
+    local dots = 0
+    
+    while tick() - start < LoadTime do
+        local elapsed = tick() - start
+        local percent = math.floor((elapsed / LoadTime) * 100)
+        
+        progressText.Text = percent .. "%"
+        TweenService:Create(progressBar, TweenInfo.new(0.3), {
+            Size = UDim2.new(percent / 100, 0, 1, 0)
+        }):Play()
+        
+        -- Меняющиеся точки
+        dots = (dots % 3) + 1
+        subText.Text = "Загрузка ресурсов" .. string.rep(".", dots)
+        
+        task.wait(0.3)
+    end
+    
+    -- Завершение
+    progressText.Text = "100%"
+    TweenService:Create(progressBar, TweenInfo.new(0.3), {
+        Size = UDim2.new(1, 0, 1, 0)
+    }):Play()
+    
+    task.wait(0.5)
+    subText.Text = "Готово!"
+    
+    task.wait(0.5)
+    
+    -- Плавное скрытие
+    if music then music:Stop() end
+    TweenService:Create(blur, TweenInfo.new(0.5), {Size = 0}):Play()
+    local fade = TweenService:Create(bg, TweenInfo.new(0.5), {BackgroundTransparency = 1})
+    fade:Play()
+    fade.Completed:Connect(function()
+        blur:Destroy()
+        gui:Destroy()
+    end)
+end)
+--[[
     MOBILE-FRIENDLY SCRIPT FOR XENO (FIXED)
 ]]
 
