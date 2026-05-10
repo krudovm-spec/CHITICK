@@ -1108,7 +1108,7 @@ end)
 Players.PlayerRemoving:Connect(function(p)
     if tracers[p] then tracers[p]:Remove(); tracers[p] = nil end
 end)
-𝕄𝐢𝚜𝒉𝑎, [10.05.2026 16:34]
+
 --[[
     ESP + AIMBOT + PING для XENO MOBILE/PC
     Имя + HP + квадрат + Tool + Пинг + Аим на ПКМ
