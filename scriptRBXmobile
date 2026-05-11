@@ -1568,8 +1568,90 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 --[[
-    HP DIGITS для XENO MOBILE (ФИНАЛЬНЫЙ ФИКС)
-    Цифры HP у всех, включая зашедших позже
+    ESP КВАДРАТ для XENO MOBILE (ФИНАЛЬНЫЙ ФИКС)
+    Белый квадрат у всех игроков (уменьшенный)
+]]
+
+local Players = game:GetService("Players")
+local LP = Players.LocalPlayer
+
+-- ===== НАСТРОЙКИ =====
+local BoxColor = Color3.new(1, 1, 1)
+local BoxThickness = 2
+local BoxSize = 45 -- Уменьшенный размер
+
+-- ===== ФУНКЦИЯ =====
+local function setupBox(char)
+    local head = nil
+    
+    for _ = 1, 200 do
+        head = char:FindFirstChild("Head")
+        if head then break end
+        task.wait(0.05)
+    end
+    
+    if not head then return end
+    
+    for _, v in ipairs(char:GetDescendants()) do
+        if v:IsA("BillboardGui") and v.Name == "ESP_Box" then
+            pcall(function() v:Destroy() end)
+        end
+    end
+    
+    local bill = Instance.new("BillboardGui")
+    bill.Name = "ESP_Box"
+    bill.Adornee = head
+    bill.Size = UDim2.new(0, BoxSize, 0, BoxSize)
+    bill.StudsOffset = Vector3.new(0, 0.8, 0)
+    bill.AlwaysOnTop = true
+    bill.Parent = head
+    
+    local box = Instance.new("Frame", bill)
+    box.Size = UDim2.new(1, 0, 1, 0)
+    box.BackgroundTransparency = 1
+    box.BorderColor3 = BoxColor
+    box.BorderSizePixel = BoxThickness
+end
+
+local function addPlayer(player)
+    if player == LP then return end
+    
+    task.spawn(function()
+        if player.Character then setupBox(player.Character) end
+        
+        player.CharacterAdded:Connect(function(char)
+            task.wait(0.3)
+            setupBox(char)
+        end)
+    end)
+end
+
+for _, p in ipairs(Players:GetPlayers()) do addPlayer(p) end
+Players.PlayerAdded:Connect(addPlayer)
+
+task.spawn(function()
+    while true do
+        task.wait(2)
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= LP then
+                addPlayer(p)
+                if p.Character then
+                    local found = false
+                    for _, v in ipairs(p.Character:GetDescendants()) do
+                        if v:IsA("BillboardGui") and v.Name == "ESP_Box" then
+                            found = true
+                            break
+                        end
+                    end
+                    if not found then setupBox(p.Character) end
+                end
+            end
+        end
+    end
+end)
+--[[
+    ESP для XENO MOBILE (ФИНАЛЬНЫЙ ФИКС)
+    HP цифры + Tool справа
 ]]
 
 local Players = game:GetService("Players")
@@ -1577,10 +1659,10 @@ local LP = Players.LocalPlayer
 
 -- ===== НАСТРОЙКИ =====
 local Offset = 2.5
-local TextSize = 13
+local TextSize = 10
 
 -- ===== ФУНКЦИЯ =====
-local function setupHP(char)
+local function setupESP(char, player)
     local head = nil
     local hum = nil
     
@@ -1593,55 +1675,88 @@ local function setupHP(char)
     
     if not head or not hum then return end
     
-    -- Удаляем старые
+    -- Удаляем старые на этом персонаже
     for _, v in ipairs(char:GetDescendants()) do
-        if v:IsA("BillboardGui") and v.Name == "HP_Digits" then
+        if v:IsA("BillboardGui") and v.Name == "ESP_Info" then
             pcall(function() v:Destroy() end)
         end
     end
     
     local bill = Instance.new("BillboardGui")
-    bill.Name = "HP_Digits"
+    bill.Name = "ESP_Info"
     bill.Adornee = head
-    bill.Size = UDim2.new(0, 60, 0, 18)
+    bill.Size = UDim2.new(0, 120, 0, 20)
     bill.StudsOffset = Vector3.new(0, Offset, 0)
     bill.AlwaysOnTop = true
     bill.Parent = head
     
-    local label = Instance.new("TextLabel", bill)
-    label.Size = UDim2.new(1, 0, 1, 0)
-    label.BackgroundTransparency = 1
-    label.Font = Enum.Font.GothamBold
-    label.TextSize = TextSize
-    label.TextStrokeTransparency = 0.5
+    -- HP слева
+    local hpLabel = Instance.new("TextLabel", bill)
+    hpLabel.Size = UDim2.new(0, 55, 0, 16)
+    hpLabel.Position = UDim2.new(0, 0, 0, 2)
+    hpLabel.BackgroundTransparency = 1
+    hpLabel.Font = Enum.Font.GothamBold
+    hpLabel.TextSize = TextSize
+    hpLabel.TextStrokeTransparency = 0.5
+    hpLabel.TextXAlignment = Enum.TextXAlignment.Left
     
-    local function update(health)
+    local function updateHP(health)
         pcall(function()
-            local p = health / hum.MaxHealth
-            label.Text = math.floor(health)
-            label.TextColor3 = p > 0.6 and Color3.new(0.2, 1, 0.2) 
-                or p > 0.3 and Color3.new(1, 0.8, 0) 
+            local percent = health / hum.MaxHealth
+            hpLabel.Text = math.floor(health) .. " HP"
+            hpLabel.TextColor3 = percent > 0.6 and Color3.new(0.2, 1, 0.2) 
+                or percent > 0.3 and Color3.new(1, 0.8, 0) 
                 or Color3.new(1, 0.2, 0.2)
         end)
     end
     
-    update(hum.Health)
-    hum.HealthChanged:Connect(update)
-    hum.Died:Connect(function() pcall(function() bill:Destroy() end) end)
+    updateHP(hum.Health)
+    hum.HealthChanged:Connect(updateHP)
+    
+    -- Tool справа
+    local toolLabel = Instance.new("TextLabel", bill)
+    toolLabel.Size = UDim2.new(0, 60, 0, 16)
+    toolLabel.Position = UDim2.new(1, -60, 0, 2)
+    toolLabel.BackgroundTransparency = 1
+    toolLabel.Font = Enum.Font.GothamMedium
+    toolLabel.TextSize = TextSize
+    toolLabel.TextStrokeTransparency = 0.5
+    toolLabel.TextXAlignment = Enum.TextXAlignment.Right
+    toolLabel.TextColor3 = Color3.new(1, 0.8, 0.3)
+    
+    -- Обновление Tool
+    task.spawn(function()
+        while char:IsDescendantOf(game) do
+            pcall(function()
+                local tool = char:FindFirstChildOfClass("Tool")
+                toolLabel.Text = tool and tool.Name or ""
+            end)
+            task.wait(0.5)
+        end
+    end)
+    
+    -- Удаление при смерти
+    hum.Died:Connect(function()
+        pcall(function() bill:Destroy() end)
+    end)
 end
 
 -- ===== ДОБАВЛЕНИЕ ИГРОКА =====
+local activePlayers = {}
+
 local function addPlayer(player)
     if player == LP then return end
+    if activePlayers[player] then return end
+    activePlayers[player] = true
     
     task.spawn(function()
         if player.Character then
-            setupHP(player.Character)
+            setupESP(player.Character, player)
         end
         
         player.CharacterAdded:Connect(function(char)
             task.wait(0.3)
-            setupHP(char)
+            setupESP(char, player)
         end)
     end)
 end
@@ -1651,25 +1766,23 @@ for _, p in ipairs(Players:GetPlayers()) do
     addPlayer(p)
 end
 
--- Новые (зашедшие позже)
+-- Новые
 Players.PlayerAdded:Connect(addPlayer)
 
--- Проверка каждые 2 сек
+-- Очистка при выходе
+Players.PlayerRemoving:Connect(function(p)
+    activePlayers[p] = nil
+end)
+
+-- Проверка каждые 2 сек (добавляет пропущенных)
 task.spawn(function()
     while true do
         task.wait(2)
         for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= LP and p.Character then
-                local found = false
-                for _, v in ipairs(p.Character:GetDescendants()) do
-                    if v:IsA("BillboardGui") and v.Name == "HP_Digits" then
-                        found = true
-                        break
-                    end
-                end
-                if not found then
-                    task.spawn(function() setupHP(p.Character) end)
-                end
+            if p ~= LP then
+                -- Сбрасываем флаг для перепроверки
+                activePlayers[p] = nil
+                addPlayer(p)
             end
         end
     end
