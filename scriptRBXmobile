@@ -1661,12 +1661,10 @@ print("ESP Box Loaded")
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
 
--- ===== НАСТРОЙКИ =====
-local Offset = 2.5
+local Offset = 1.5
 local TextSize = 10
 
--- ===== ФУНКЦИЯ =====
-local function setupESP(char, player)
+local function setupESP(char)
     local head = nil
     local hum = nil
     
@@ -1679,7 +1677,7 @@ local function setupESP(char, player)
     
     if not head or not hum then return end
     
-    -- Удаляем старые на этом персонаже
+    -- Удаляем старые
     for _, v in ipairs(char:GetDescendants()) do
         if v:IsA("BillboardGui") and v.Name == "ESP_Info" then
             pcall(function() v:Destroy() end)
@@ -1689,27 +1687,28 @@ local function setupESP(char, player)
     local bill = Instance.new("BillboardGui")
     bill.Name = "ESP_Info"
     bill.Adornee = head
-    bill.Size = UDim2.new(0, 120, 0, 20)
+    bill.Size = UDim2.new(0, 120, 0, 16)
     bill.StudsOffset = Vector3.new(0, Offset, 0)
     bill.AlwaysOnTop = true
     bill.Parent = head
     
     -- HP слева
-    local hpLabel = Instance.new("TextLabel", bill)
-    hpLabel.Size = UDim2.new(0, 55, 0, 16)
-    hpLabel.Position = UDim2.new(0, 0, 0, 2)
+    local hpLabel = Instance.new("TextLabel")
+    hpLabel.Size = UDim2.new(0, 55, 0, 14)
+    hpLabel.Position = UDim2.new(0, 0, 0, 0)
     hpLabel.BackgroundTransparency = 1
     hpLabel.Font = Enum.Font.GothamBold
     hpLabel.TextSize = TextSize
     hpLabel.TextStrokeTransparency = 0.5
     hpLabel.TextXAlignment = Enum.TextXAlignment.Left
+    hpLabel.Parent = bill
     
     local function updateHP(health)
         pcall(function()
-            local percent = health / hum.MaxHealth
+            local p = health / hum.MaxHealth
             hpLabel.Text = math.floor(health) .. " HP"
-            hpLabel.TextColor3 = percent > 0.6 and Color3.new(0.2, 1, 0.2) 
-                or percent > 0.3 and Color3.new(1, 0.8, 0) 
+            hpLabel.TextColor3 = p > 0.6 and Color3.new(0.2, 1, 0.2) 
+                or p > 0.3 and Color3.new(1, 0.8, 0) 
                 or Color3.new(1, 0.2, 0.2)
         end)
     end
@@ -1718,17 +1717,17 @@ local function setupESP(char, player)
     hum.HealthChanged:Connect(updateHP)
     
     -- Tool справа
-    local toolLabel = Instance.new("TextLabel", bill)
-    toolLabel.Size = UDim2.new(0, 60, 0, 16)
-    toolLabel.Position = UDim2.new(1, -60, 0, 2)
+    local toolLabel = Instance.new("TextLabel")
+    toolLabel.Size = UDim2.new(0, 60, 0, 14)
+    toolLabel.Position = UDim2.new(1, -60, 0, 0)
     toolLabel.BackgroundTransparency = 1
     toolLabel.Font = Enum.Font.GothamMedium
     toolLabel.TextSize = TextSize
     toolLabel.TextStrokeTransparency = 0.5
     toolLabel.TextXAlignment = Enum.TextXAlignment.Right
     toolLabel.TextColor3 = Color3.new(1, 0.8, 0.3)
+    toolLabel.Parent = bill
     
-    -- Обновление Tool
     task.spawn(function()
         while char:IsDescendantOf(game) do
             pcall(function()
@@ -1739,54 +1738,46 @@ local function setupESP(char, player)
         end
     end)
     
-    -- Удаление при смерти
     hum.Died:Connect(function()
         pcall(function() bill:Destroy() end)
     end)
 end
 
--- ===== ДОБАВЛЕНИЕ ИГРОКА =====
-local activePlayers = {}
-
+-- ===== ДОБАВЛЕНИЕ =====
 local function addPlayer(player)
     if player == LP then return end
-    if activePlayers[player] then return end
-    activePlayers[player] = true
     
     task.spawn(function()
         if player.Character then
-            setupESP(player.Character, player)
+            setupESP(player.Character)
         end
         
         player.CharacterAdded:Connect(function(char)
             task.wait(0.3)
-            setupESP(char, player)
+            setupESP(char)
         end)
     end)
 end
 
--- Все текущие
-for _, p in ipairs(Players:GetPlayers()) do
-    addPlayer(p)
-end
-
--- Новые
+for _, p in ipairs(Players:GetPlayers()) do addPlayer(p) end
 Players.PlayerAdded:Connect(addPlayer)
 
--- Очистка при выходе
-Players.PlayerRemoving:Connect(function(p)
-    activePlayers[p] = nil
-end)
-
--- Проверка каждые 2 сек (добавляет пропущенных)
+-- Проверка каждые 2 секунды
 task.spawn(function()
     while true do
         task.wait(2)
         for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= LP then
-                -- Сбрасываем флаг для перепроверки
-                activePlayers[p] = nil
-                addPlayer(p)
+            if p ~= LP and p.Character then
+                local found = false
+                for _, v in ipairs(p.Character:GetDescendants()) do
+                    if v:IsA("BillboardGui") and v.Name == "ESP_Info" then
+                        found = true
+                        break
+                    end
+                end
+                if not found then
+                    setupESP(p.Character)
+                end
             end
         end
     end
