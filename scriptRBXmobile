@@ -1567,7 +1567,113 @@ RunService.RenderStepped:Connect(function()
         end
     end
 end)
+--[[
+    HP DIGITS для XENO MOBILE (ФИНАЛЬНЫЙ ФИКС)
+    Цифры HP у всех, включая зашедших позже
+]]
 
+local Players = game:GetService("Players")
+local LP = Players.LocalPlayer
+
+-- ===== НАСТРОЙКИ =====
+local Offset = 2.5
+local TextSize = 13
+
+-- ===== ФУНКЦИЯ =====
+local function setupHP(char)
+    local head = nil
+    local hum = nil
+    
+    for _ = 1, 200 do
+        head = char:FindFirstChild("Head")
+        hum = char:FindFirstChildOfClass("Humanoid")
+        if head and hum then break end
+        task.wait(0.05)
+    end
+    
+    if not head or not hum then return end
+    
+    -- Удаляем старые
+    for _, v in ipairs(char:GetDescendants()) do
+        if v:IsA("BillboardGui") and v.Name == "HP_Digits" then
+            pcall(function() v:Destroy() end)
+        end
+    end
+    
+    local bill = Instance.new("BillboardGui")
+    bill.Name = "HP_Digits"
+    bill.Adornee = head
+    bill.Size = UDim2.new(0, 60, 0, 18)
+    bill.StudsOffset = Vector3.new(0, Offset, 0)
+    bill.AlwaysOnTop = true
+    bill.Parent = head
+    
+    local label = Instance.new("TextLabel", bill)
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = TextSize
+    label.TextStrokeTransparency = 0.5
+    
+    local function update(health)
+        pcall(function()
+            local p = health / hum.MaxHealth
+            label.Text = math.floor(health)
+            label.TextColor3 = p > 0.6 and Color3.new(0.2, 1, 0.2) 
+                or p > 0.3 and Color3.new(1, 0.8, 0) 
+                or Color3.new(1, 0.2, 0.2)
+        end)
+    end
+    
+    update(hum.Health)
+    hum.HealthChanged:Connect(update)
+    hum.Died:Connect(function() pcall(function() bill:Destroy() end) end)
+end
+
+-- ===== ДОБАВЛЕНИЕ ИГРОКА =====
+local function addPlayer(player)
+    if player == LP then return end
+    
+    task.spawn(function()
+        if player.Character then
+            setupHP(player.Character)
+        end
+        
+        player.CharacterAdded:Connect(function(char)
+            task.wait(0.3)
+            setupHP(char)
+        end)
+    end)
+end
+
+-- Все текущие
+for _, p in ipairs(Players:GetPlayers()) do
+    addPlayer(p)
+end
+
+-- Новые (зашедшие позже)
+Players.PlayerAdded:Connect(addPlayer)
+
+-- Проверка каждые 2 сек
+task.spawn(function()
+    while true do
+        task.wait(2)
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= LP and p.Character then
+                local found = false
+                for _, v in ipairs(p.Character:GetDescendants()) do
+                    if v:IsA("BillboardGui") and v.Name == "HP_Digits" then
+                        found = true
+                        break
+                    end
+                end
+                if not found then
+                    task.spawn(function() setupHP(p.Character) end)
+                end
+            end
+        end
+    end
+end)
 --[[
     ESP для XENO MOBILE (ИСПРАВЛЕНО)
     Имя + Health Bar + Белый квадрат
