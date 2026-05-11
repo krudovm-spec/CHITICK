@@ -1034,7 +1034,7 @@ local LP = Players.LocalPlayer
 -- ===== НАСТРОЙКИ =====
 local TracerColor = Color3.new(1, 1, 1)
 local TracerThickness = 1
-local TracerTransparency = 1
+local TracerTransparency = 0.5
 
 -- ===== TRACER'Ы =====
 local tracers = {}
