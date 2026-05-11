@@ -1,87 +1,181 @@
 --[[
     LOADING SCREEN для XENO MOBILE
-    Рандомная загрузка 20-34 секунд
+    Во весь экран, первее всех GUI, красиво
 ]]
 
 local CoreGui = game:GetService("CoreGui")
 local Lighting = game:GetService("Lighting")
 local TweenService = game:GetService("TweenService")
+local SoundService = game:GetService("SoundService")
 
 local LoadTime = math.random(20, 34)
 
+-- Убиваем все GUI которые уже есть
+for _, v in ipairs(CoreGui:GetChildren()) do
+    if v:IsA("ScreenGui") then
+        v.Enabled = false
+    end
+end
+
 -- Блюр
 local blur = Instance.new("BlurEffect")
-blur.Size = 25
+blur.Name = "MainBlur"
+blur.Size = 30
 blur.Parent = Lighting
 
 -- GUI
 local gui = Instance.new("ScreenGui")
-gui.Name = "LoadingScreen"
+gui.Name = "AAAAA_MainLoading"
 gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
+gui.ZIndex = 9999
+gui.DisplayOrder = 9999
 gui.Parent = CoreGui
 
--- Фон
+-- Фон (чёрный)
 local bg = Instance.new("Frame")
 bg.Size = UDim2.new(1, 0, 1, 0)
-bg.BackgroundColor3 = Color3.new(0, 0, 0)
+bg.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 bg.BorderSizePixel = 0
+bg.ZIndex = 9999
 bg.Parent = gui
+
+-- Частицы на фоне
+for i = 1, 30 do
+    local dot = Instance.new("Frame")
+    dot.Size = UDim2.new(0, math.random(2, 4), 0, math.random(2, 4))
+    dot.Position = UDim2.new(math.random(), 0, math.random(), 0)
+    dot.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
+    dot.BackgroundTransparency = 0.6
+    dot.BorderSizePixel = 0
+    dot.ZIndex = 9999
+    Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
+    dot.Parent = bg
+    
+    task.spawn(function()
+        while dot:IsDescendantOf(gui) do
+            local t = TweenService:Create(dot, TweenInfo.new(math.random(3, 6), Enum.EasingStyle.Linear), {
+                Position = UDim2.new(math.random(), 0, math.random(), 0)
+            })
+            t:Play()
+            t.Completed:Wait()
+        end
+    end)
+end
+
+-- Центральный контейнер
+local container = Instance.new("Frame")
+container.AnchorPoint = Vector2.new(0.5, 0.5)
+container.Position = UDim2.new(0.5, 0, 0.5, 0)
+container.Size = UDim2.new(0, 200, 0, 200)
+container.BackgroundTransparency = 1
+container.ZIndex = 9999
+container.Parent = bg
+
+-- Круг
+local circle = Instance.new("Frame")
+circle.AnchorPoint = Vector2.new(0.5, 0.5)
+circle.Position = UDim2.new(0.5, 0, 0, 50)
+circle.Size = UDim2.new(0, 90, 0, 90)
+circle.BackgroundTransparency = 1
+circle.BorderSizePixel = 2
+circle.BorderColor3 = Color3.fromRGB(60, 140, 255)
+circle.ZIndex = 9999
+Instance.new("UICorner", circle).CornerRadius = UDim.new(1, 0)
+circle.Parent = container
+
+-- Иконка
+local icon = Instance.new("TextLabel")
+icon.Size = UDim2.new(1, 0, 1, 0)
+icon.BackgroundTransparency = 1
+icon.Text = "⚡"
+icon.TextSize = 36
+icon.Font = Enum.Font.GothamBold
+icon.ZIndex = 9999
+icon.Parent = circle
 
 -- Заголовок
 local title = Instance.new("TextLabel")
-title.AnchorPoint = Vector2.new(0.5, 0.5)
-title.Position = UDim2.new(0.5, 0, 0.45, 0)
-title.Size = UDim2.new(0, 200, 0, 40)
+title.AnchorPoint = Vector2.new(0.5, 0)
+title.Position = UDim2.new(0.5, 0, 0, 105)
+title.Size = UDim2.new(0, 200, 0, 30)
+title.BackgroundTransparency = 1
 title.Text = "ЗАГРУЗКА"
 title.TextColor3 = Color3.new(1, 1, 1)
 title.Font = Enum.Font.GothamBold
-title.TextSize = 24
-title.BackgroundTransparency = 1
-title.Parent = bg
+title.TextSize = 20
+title.ZIndex = 9999
+title.Parent = container
 
 -- Проценты
-local percent = Instance.new("TextLabel")
-percent.AnchorPoint = Vector2.new(0.5, 0.5)
-percent.Position = UDim2.new(0.5, 0, 0.5, 0)
-percent.Size = UDim2.new(0, 100, 0, 30)
-percent.Text = "0%"
-percent.TextColor3 = Color3.fromRGB(100, 180, 255)
-percent.Font = Enum.Font.GothamBold
-percent.TextSize = 20
-percent.BackgroundTransparency = 1
-percent.Parent = bg
+local percentText = Instance.new("TextLabel")
+percentText.AnchorPoint = Vector2.new(0.5, 0)
+percentText.Position = UDim2.new(0.5, 0, 0, 135)
+percentText.Size = UDim2.new(0, 100, 0, 24)
+percentText.BackgroundTransparency = 1
+percentText.Text = "0%"
+percentText.TextColor3 = Color3.fromRGB(80, 180, 255)
+percentText.Font = Enum.Font.GothamBold
+percentText.TextSize = 18
+percentText.ZIndex = 9999
+percentText.Parent = container
 
 -- Полоска
 local barBg = Instance.new("Frame")
-barBg.AnchorPoint = Vector2.new(0.5, 0.5)
-barBg.Position = UDim2.new(0.5, 0, 0.55, 0)
-barBg.Size = UDim2.new(0, 200, 0, 6)
-barBg.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+barBg.AnchorPoint = Vector2.new(0.5, 0)
+barBg.Position = UDim2.new(0.5, 0, 0, 162)
+barBg.Size = UDim2.new(0, 180, 0, 6)
+barBg.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 barBg.BorderSizePixel = 0
-barBg.Parent = bg
+barBg.ZIndex = 9999
 Instance.new("UICorner", barBg).CornerRadius = UDim.new(0, 3)
+barBg.Parent = container
 
 local bar = Instance.new("Frame")
 bar.Size = UDim2.new(0, 0, 1, 0)
-bar.BackgroundColor3 = Color3.fromRGB(80, 180, 255)
+bar.BackgroundColor3 = Color3.fromRGB(60, 160, 255)
 bar.BorderSizePixel = 0
-bar.Parent = barBg
+bar.ZIndex = 9999
 Instance.new("UICorner", bar).CornerRadius = UDim.new(0, 3)
+bar.Parent = barBg
 
--- Текст
-local sub = Instance.new("TextLabel")
-sub.AnchorPoint = Vector2.new(0.5, 0.5)
-sub.Position = UDim2.new(0.5, 0, 0.6, 0)
-sub.Size = UDim2.new(0, 200, 0, 20)
-sub.Text = "Загрузка..."
-sub.TextColor3 = Color3.fromRGB(120, 120, 120)
-sub.Font = Enum.Font.GothamMedium
-sub.TextSize = 12
-sub.BackgroundTransparency = 1
-sub.Parent = bg
+-- Текст снизу
+local subText = Instance.new("TextLabel")
+subText.AnchorPoint = Vector2.new(0.5, 0)
+subText.Position = UDim2.new(0.5, 0, 0, 175)
+subText.Size = UDim2.new(0, 200, 0, 18)
+subText.BackgroundTransparency = 1
+subText.Text = "Загрузка ресурсов"
+subText.TextColor3 = Color3.fromRGB(120, 120, 130)
+subText.Font = Enum.Font.GothamMedium
+subText.TextSize = 11
+subText.ZIndex = 9999
+subText.Parent = container
 
--- Анимация
+-- Музыка
+local music
+pcall(function()
+    music = Instance.new("Sound")
+    music.SoundId = "rbxassetid://1838221743"
+    music.Volume = 0.3
+    music.Looped = true
+    music.Parent = SoundService
+    music:Play()
+end)
+
+-- ===== АНИМАЦИЯ =====
 task.spawn(function()
+    -- Пульсация круга
+    task.spawn(function()
+        while circle:IsDescendantOf(gui) do
+            TweenService:Create(circle, TweenInfo.new(1.2), {BorderColor3 = Color3.fromRGB(100, 200, 255)}):Play()
+            task.wait(1.2)
+            TweenService:Create(circle, TweenInfo.new(1.2), {BorderColor3 = Color3.fromRGB(40, 100, 220)}):Play()
+            task.wait(1.2)
+        end
+    end)
+    
+    -- Прогресс
     local start = tick()
     local dots = 0
     
@@ -89,25 +183,35 @@ task.spawn(function()
         local elapsed = tick() - start
         local p = math.floor((elapsed / LoadTime) * 100)
         
-        percent.Text = p .. "%"
+        percentText.Text = p .. "%"
         bar.Size = UDim2.new(p / 100, 0, 1, 0)
         
         dots = (dots % 3) + 1
-        sub.Text = "Загрузка" .. string.rep(".", dots)
+        subText.Text = "Загрузка ресурсов" .. string.rep(".", dots)
         
         task.wait(0.2)
     end
     
-    percent.Text = "100%"
+    percentText.Text = "100%"
     bar.Size = UDim2.new(1, 0, 1, 0)
-    sub.Text = "Готово!"
+    subText.Text = "Готово!"
+    TweenService:Create(circle, TweenInfo.new(0.3), {BorderColor3 = Color3.fromRGB(80, 255, 120)}):Play()
     
-    task.wait(0.5)
+    task.wait(0.8)
     
-    TweenService:Create(blur, TweenInfo.new(0.5), {Size = 0}):Play()
-    TweenService:Create(bg, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
+    -- Включаем GUI обратно
+    for _, v in ipairs(CoreGui:GetChildren()) do
+        if v:IsA("ScreenGui") and v ~= gui then
+            v.Enabled = true
+        end
+    end
     
-    task.wait(0.5)
+    -- Скрытие
+    if music then music:Stop() end
+    TweenService:Create(blur, TweenInfo.new(0.4), {Size = 0}):Play()
+    TweenService:Create(bg, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play()
+    
+    task.wait(0.4)
     blur:Destroy()
     gui:Destroy()
 end)
