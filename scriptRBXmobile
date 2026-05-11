@@ -1,5 +1,6 @@
 --[[
     MOBILE-FRIENDLY SCRIPT FOR XENO (FIXED)
+    Красивая загрузка + визуал активации
 ]]
 
 local Services = {
@@ -13,35 +14,177 @@ local Services = {
 
 local LP = Services.Players.LocalPlayer
 local Camera = workspace.CurrentCamera
+local Lighting = game:GetService("Lighting")
 
 -- НАСТРОЙКИ
 local CORRECT_KEY = "FREE_SLAKINKODPC"
 local KEY_LINK = "https://t.me/HDVCHIKpublic/27"
-
-local Settings = {
-    ESP = true,
-    AIMBOT = true,
-    KILL_AURA = true,
-    BIG_HEADS = true,
-    DEATH_MARKERS = true
-}
-
-local AimRadius = 150
-local KillAuraRange = 20
-local HeadSize = 8
+local LoadTime = math.random(20, 34)
 
 -- Флаг авторизации
 local isAuthenticated = false
 
 -- ========================================
--- GUI
+-- ЗАГРУЗКА (КРАСИВАЯ)
+-- ========================================
+local loadGui = Instance.new("ScreenGui", Services.CoreGui)
+loadGui.Name = "LoadingScreen"
+loadGui.ResetOnSpawn = false
+loadGui.IgnoreGuiInset = true
+loadGui.ZIndex = 999
+
+local loadBlur = Instance.new("BlurEffect", Lighting)
+loadBlur.Name = "LoadBlur"
+loadBlur.Size = 25
+
+local loadBg = Instance.new("Frame", loadGui)
+loadBg.Size = UDim2.new(1, 0, 1, 0)
+loadBg.BackgroundColor3 = Color3.fromRGB(5, 5, 8)
+loadBg.BorderSizePixel = 0
+
+-- Звёзды на фоне
+for i = 1, 40 do
+    local dot = Instance.new("Frame", loadBg)
+    dot.Size = UDim2.new(0, math.random(2, 4), 0, math.random(2, 4))
+    dot.Position = UDim2.new(math.random(), 0, math.random(), 0)
+    dot.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
+    dot.BackgroundTransparency = 0.6
+    dot.BorderSizePixel = 0
+    Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
+    
+    task.spawn(function()
+        while dot:IsDescendantOf(loadGui) do
+            Services.TweenService:Create(dot, TweenInfo.new(math.random(3, 6), Enum.EasingStyle.Linear), {
+                Position = UDim2.new(math.random(), 0, math.random(), 0),
+                BackgroundTransparency = math.random(30, 80) / 100
+            }):Play()
+            task.wait(math.random(3, 6))
+        end
+    end)
+end
+
+-- Круг с иконкой
+local circle = Instance.new("Frame", loadBg)
+circle.AnchorPoint = Vector2.new(0.5, 0.5)
+circle.Position = UDim2.new(0.5, 0, 0.38, 0)
+circle.Size = UDim2.new(0, 90, 0, 90)
+circle.BackgroundTransparency = 1
+circle.BorderSizePixel = 2
+circle.BorderColor3 = Color3.fromRGB(60, 140, 255)
+Instance.new("UICorner", circle).CornerRadius = UDim.new(1, 0)
+
+local icon = Instance.new("TextLabel", circle)
+icon.Size = UDim2.new(1, 0, 1, 0)
+icon.BackgroundTransparency = 1
+icon.Text = "⚡"
+icon.TextSize = 36
+icon.Font = Enum.Font.GothamBold
+
+-- Заголовок
+local loadTitle = Instance.new("TextLabel", loadBg)
+loadTitle.AnchorPoint = Vector2.new(0.5, 0.5)
+loadTitle.Position = UDim2.new(0.5, 0, 0.5, 0)
+loadTitle.Size = UDim2.new(0, 250, 0, 35)
+loadTitle.BackgroundTransparency = 1
+loadTitle.Text = "ЗАГРУЗКА"
+loadTitle.TextColor3 = Color3.new(1, 1, 1)
+loadTitle.Font = Enum.Font.GothamBold
+loadTitle.TextSize = 22
+
+-- Проценты
+local loadPercent = Instance.new("TextLabel", loadBg)
+loadPercent.AnchorPoint = Vector2.new(0.5, 0.5)
+loadPercent.Position = UDim2.new(0.5, 0, 0.55, 0)
+loadPercent.Size = UDim2.new(0, 100, 0, 28)
+loadPercent.BackgroundTransparency = 1
+loadPercent.Text = "0%"
+loadPercent.TextColor3 = Color3.fromRGB(80, 180, 255)
+loadPercent.Font = Enum.Font.GothamBold
+loadPercent.TextSize = 20
+
+-- Полоска
+local barBg = Instance.new("Frame", loadBg)
+barBg.AnchorPoint = Vector2.new(0.5, 0.5)
+barBg.Position = UDim2.new(0.5, 0, 0.61, 0)
+barBg.Size = UDim2.new(0, 200, 0, 6)
+barBg.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+barBg.BorderSizePixel = 0
+Instance.new("UICorner", barBg).CornerRadius = UDim.new(0, 3)
+
+local bar = Instance.new("Frame", barBg)
+bar.Size = UDim2.new(0, 0, 1, 0)
+bar.BackgroundColor3 = Color3.fromRGB(60, 160, 255)
+bar.BorderSizePixel = 0
+Instance.new("UICorner", bar).CornerRadius = UDim.new(0, 3)
+
+𝕄𝐢𝚜𝒉𝑎, [11.05.2026 23:19]
+-- Текст снизу
+local loadSub = Instance.new("TextLabel", loadBg)
+loadSub.AnchorPoint = Vector2.new(0.5, 0.5)
+loadSub.Position = UDim2.new(0.5, 0, 0.67, 0)
+loadSub.Size = UDim2.new(0, 200, 0, 20)
+loadSub.BackgroundTransparency = 1
+loadSub.Text = "Загрузка..."
+loadSub.TextColor3 = Color3.fromRGB(130, 130, 140)
+loadSub.Font = Enum.Font.GothamMedium
+loadSub.TextSize = 12
+
+-- Анимация загрузки
+local loadDone = false
+task.spawn(function()
+    -- Пульсация круга
+    task.spawn(function()
+        while circle:IsDescendantOf(loadGui) do
+            Services.TweenService:Create(circle, TweenInfo.new(1.2), {BorderColor3 = Color3.fromRGB(100, 200, 255)}):Play()
+            task.wait(1.2)
+            Services.TweenService:Create(circle, TweenInfo.new(1.2), {BorderColor3 = Color3.fromRGB(40, 100, 220)}):Play()
+            task.wait(1.2)
+        end
+    end)
+    
+    local start = tick()
+    local dots = 0
+    
+    while tick() - start < LoadTime do
+        local elapsed = tick() - start
+        local p = math.floor((elapsed / LoadTime) * 100)
+        
+        loadPercent.Text = p .. "%"
+        bar.Size = UDim2.new(p / 100, 0, 1, 0)
+        
+        dots = (dots % 3) + 1
+        loadSub.Text = "Загрузка" .. string.rep(".", dots)
+        
+        task.wait(0.2)
+    end
+    
+    loadPercent.Text = "100%"
+    bar.Size = UDim2.new(1, 0, 1, 0)
+    loadSub.Text = "Готово!"
+    Services.TweenService:Create(circle, TweenInfo.new(0.3), {BorderColor3 = Color3.fromRGB(80, 255, 120)}):Play()
+    
+    task.wait(0.6)
+    
+    Services.TweenService:Create(loadBlur, TweenInfo.new(0.5), {Size = 0}):Play()
+    Services.TweenService:Create(loadBg, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
+    
+    task.wait(0.5)
+    loadBlur:Destroy()
+    loadGui:Destroy()
+    loadDone = true
+end)
+
+repeat task.wait(0.1) until loadDone
+
+-- ========================================
+-- GUI ЛОГИНА (С ТОЧКАМИ)
 -- ========================================
 local screenGui = Instance.new("ScreenGui", Services.CoreGui)
 screenGui.IgnoreGuiInset = true
 screenGui.ResetOnSpawn = false
 screenGui.Name = "LockScreen"
 
-local blur = Instance.new("BlurEffect", game:GetService("Lighting"))
+local blur = Instance.new("BlurEffect", Lighting)
 blur.Size = 15
 
 local mainFrame = Instance.new("Frame", screenGui)
@@ -49,19 +192,42 @@ mainFrame.Size = UDim2.new(1, 0, 1, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(5, 5, 5)
 mainFrame.BorderSizePixel = 0
 
+-- Точки на фоне логина
+for i = 1, 15 do
+    local dot = Instance.new("Frame", mainFrame)
+    dot.Size = UDim2.new(0, 3, 0, 3)
+    dot.Position = UDim2.new(math.random(), 0, math.random(), 0)
+    dot.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    dot.BackgroundTransparency = 0.5
+    dot.BorderSizePixel = 0
+    Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
+end
+
 local loginBox = Instance.new("Frame", mainFrame)
 loginBox.AnchorPoint = Vector2.new(0.5, 0.5)
 loginBox.Position = UDim2.new(0.5, 0, 0.4, 0)
-loginBox.Size = UDim2.new(0.85, 0, 0, 190)
+loginBox.Size = UDim2.new(0.85, 0, 0, 200)
 loginBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 loginBox.BorderSizePixel = 0
 Instance.new("UICorner", loginBox).CornerRadius = UDim.new(0, 12)
 
--- Заголовок (без HTML тегов!)
+-- Заголовок с иконкой
+local titleBox = Instance.new("Frame", loginBox)
+titleBox.Size = UDim2.new(1, -20, 0, 30)
+titleBox.Position = UDim2.new(0, 10, 0, 10)
+titleBox.BackgroundTransparency = 1
+
+local titleIcon = Instance.new("TextLabel", titleBox)
+titleIcon.Size = UDim2.new(0, 24, 0, 24)
+titleIcon.Position = UDim2.new(0, 0, 0, 3)
+titleIcon.BackgroundTransparency = 1
+titleIcon.Text = "🔐"
+titleIcon.TextSize = 16
+
 local title = Instance.new("TextLabel", loginBox)
 title.Size = UDim2.new(1, -20, 0, 30)
 title.Position = UDim2.new(0, 10, 0, 10)
-title.Text = "ENTER KEY"
+title.Text = "  ENTER KEY"
 title.TextColor3 = Color3.new(1, 1, 1)
 title.Font = Enum.Font.GothamBold
 title.TextSize = 16
@@ -70,8 +236,8 @@ title.TextXAlignment = Enum.TextXAlignment.Left
 
 local keyInput = Instance.new("TextBox", loginBox)
 keyInput.Size = UDim2.new(1, -20, 0, 40)
-keyInput.Position = UDim2.new(0, 10, 0, 45)
-keyInput.PlaceholderText = "Key..."
+keyInput.Position = UDim2.new(0, 10, 0, 48)
+keyInput.PlaceholderText = "Введите ключ..."
 keyInput.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
 keyInput.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 keyInput.TextColor3 = Color3.new(1, 1, 1)
@@ -80,10 +246,25 @@ keyInput.TextSize = 14
 keyInput.ClearTextOnFocus = false
 Instance.new("UICorner", keyInput).CornerRadius = UDim.new(0, 8)
 
--- Кнопка АКТИВАЦИИ (чистый текст)
+-- Точки безопасности под полем ввода
+local statusDots = Instance.new("Frame", loginBox)
+statusDots.Size = UDim2.new(1, -20, 0, 6)
+statusDots.Position = UDim2.new(0, 10, 0, 92)
+statusDots.BackgroundTransparency = 1
+
+for i = 1, 5 do
+    local dot = Instance.new("Frame", statusDots)
+    dot.Size = UDim2.new(0, 6, 0, 6)
+    dot.Position = UDim2.new(0, (i-1)*20, 0, 0)
+    dot.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    dot.BorderSizePixel = 0
+    dot.Name = "Dot"..i
+    Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
+end
+
 local activateBtn = Instance.new("TextButton", loginBox)
 activateBtn.Size = UDim2.new(1, -20, 0, 40)
-activateBtn.Position = UDim2.new(0, 10, 0, 95)
+activateBtn.Position = UDim2.new(0, 10, 0, 105)
 activateBtn.BackgroundColor3 = Color3.fromRGB(0, 130, 255)
 activateBtn.Text = "ACTIVATE"
 activateBtn.TextColor3 = Color3.new(1, 1, 1)
@@ -93,9 +274,9 @@ Instance.new("UICorner", activateBtn).CornerRadius = UDim.new(0, 8)
 
 local getKeyBtn = Instance.new("TextButton", loginBox)
 getKeyBtn.Size = UDim2.new(1, -20, 0, 30)
-getKeyBtn.Position = UDim2.new(0, 10, 0, 145)
+getKeyBtn.Position = UDim2.new(0, 10, 0, 155)
 getKeyBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-getKeyBtn.Text = "GET KEY"
+getKeyBtn.Text = "🔑 GET KEY"
 getKeyBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 getKeyBtn.Font = Enum.Font.GothamMedium
 getKeyBtn.TextSize = 12
@@ -106,46 +287,53 @@ local attempts = 0
 getKeyBtn.MouseButton1Click:Connect(function()
     if setclipboard then 
         setclipboard(KEY_LINK)
-        getKeyBtn.Text = "COPIED!"
+        getKeyBtn.Text = "✅ COPIED!"
         getKeyBtn.TextColor3 = Color3.new(0.3, 1, 0.3)
         task.wait(1.5)
-        getKeyBtn.Text = "GET KEY"
+        getKeyBtn.Text = "🔑 GET KEY"
         getKeyBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
     end
 end)
 
--- ИСПРАВЛЕНО: чистая логика активации
+-- Активация
 activateBtn.MouseButton1Click:Connect(function()
     local inputText = keyInput.Text
-    -- Убираем пробелы по краям на всякий случай
     inputText = inputText:gsub("^%s+", ""):gsub("%s+$", "")
     
     if inputText == CORRECT_KEY then
-        -- Успех
         isAuthenticated = true
-        activateBtn.Text = "SUCCESS"
+        activateBtn.Text = "✅ SUCCESS"
         activateBtn.BackgroundColor3 = Color3.new(0, 0.8, 0)
         
-        -- Сразу разблокируем движение
+        -- Зажигаем все точки зелёным
+        for _, v in ipairs(statusDots:GetChildren()) do
+            if v:IsA("Frame") then
+                Services.TweenService:Create(v, TweenInfo.new(0.3), {
+                    BackgroundColor3 = Color3.new(0.3, 1, 0.3)
+                }):Play()
+            end
+        end
+        
         pcall(function()
             local char = LP.Character
             if char then
                 local hum = char:FindFirstChildOfClass("Humanoid")
-                if hum then hum.WalkSpeed = 16 end
+                if hum then 
+                    hum.WalkSpeed = 16
+                    hum.JumpPower = 50
+                end
             end
         end)
         
         task.wait(0.8)
         
-        -- Удаляем GUI
+        Services.TweenService:Create(blur, TweenInfo.new(0.5), {Size = 0}):Play()
         local fadeOut = Services.TweenService:Create(mainFrame, TweenInfo.new(0.5), {BackgroundTransparency = 1})
         fadeOut:Play()
-        Services.TweenService:Create(blur, TweenInfo.new(0.5), {Size = 0}):Play()
         
         fadeOut.Completed:Connect(function()
             blur:Destroy()
             screenGui:Destroy()
-            StartScript()
         end)
     else
         attempts += 1
@@ -153,7 +341,21 @@ activateBtn.MouseButton1Click:Connect(function()
             LP:Kick("Wrong key 3 times. Access blocked!")
             return
         end
-        activateBtn.Text = "WRONG ("..attempts.."/3)"
+        
+        -- Зажигаем точки красным по количеству попыток
+
+for i = 1, 3 do
+            local dot = statusDots:FindFirstChild("Dot"..i)
+            if dot then
+                if i <= attempts then
+                    Services.TweenService:Create(dot, TweenInfo.new(0.3), {
+                        BackgroundColor3 = Color3.new(1, 0.2, 0.2)
+                    }):Play()
+                end
+            end
+        end
+        
+        activateBtn.Text = "❌ WRONG ("..attempts.."/3)"
         activateBtn.BackgroundColor3 = Color3.new(0.8, 0, 0)
         
         task.wait(2)
@@ -162,9 +364,9 @@ activateBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- ИСПРАВЛЕНО: блокировка только если НЕ авторизован
+-- Блокировка
 Services.RunService.Stepped:Connect(function()
-    if isAuthenticated then return end -- Пропускаем если уже авторизован
+    if isAuthenticated then return end
     
     local char = LP.Character
     if char then
@@ -172,6 +374,18 @@ Services.RunService.Stepped:Connect(function()
         if hum then hum.WalkSpeed = 0 end
     end
 end)
+local Settings = {
+    ESP = true,
+    AIMBOT = true,
+    KILL_AURA = true,
+    DEATH_MARKERS = true
+}
+
+local AimRadius = 150
+local KillAuraRange = 20
+local HeadSize = 8
+
+
 
 -- ========================================
 -- ОСНОВНЫЕ ФУНКЦИИ
