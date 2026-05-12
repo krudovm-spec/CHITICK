@@ -1,1 +1,188 @@
+--[[
+    XENO INJECTOR COMPATIBLE KEY SYSTEM + LOADING GUI (FIXED + KICK SYSTEM)
+--]]
 
+local CORRECT_KEY = "FREE_SLAKINKODUPDATE"  -- Правильный ключ
+local KEY_LINK = "link-to-your-key.com" -- Ссылка на получение ключа
+
+-- Счетчик неверных попыток ввода
+local wrong_attempts = 0
+local MAX_ATTEMPTS = 3
+
+if game:GetService("CoreGui"):FindFirstChild("XenoKeySystem") then
+    game:GetService("CoreGui"):FindFirstChild("XenoKeySystem"):Destroy()
+end
+
+local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "XenoKeySystem"
+screenGui.Parent = CoreGui
+screenGui.IgnoreGuiInset = true
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 360, 0, 220)
+mainFrame.Position = UDim2.new(0.5, -180, 0.5, -110)
+mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25) 
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Draggable = true 
+mainFrame.Parent = screenGui
+
+local uiCorner = Instance.new("UICorner")
+uiCorner.CornerRadius = UDim.new(0, 10)
+uiCorner.Parent = mainFrame
+
+local uiStroke = Instance.new("UIStroke")
+uiStroke.Color = Color3.fromRGB(120, 80, 220) 
+uiStroke.Thickness = 2
+uiStroke.Parent = mainFrame
+
+local loadingFrame = Instance.new("Frame")
+loadingFrame.Size = UDim2.new(1, 0, 1, 0)
+loadingFrame.BackgroundTransparency = 1
+loadingFrame.Parent = mainFrame
+
+local loadingText = Instance.new("TextLabel")
+loadingText.Size = UDim2.new(1, 0, 1, 0)
+loadingText.BackgroundTransparency = 1
+loadingText.Text = "XENO | Loading"
+loadingText.TextColor3 = Color3.fromRGB(255, 255, 255)
+loadingText.TextSize = 22
+loadingText.Font = Enum.Font.GothamBold
+loadingText.Parent = loadingFrame
+
+local activationFrame = Instance.new("Frame")
+activationFrame.Size = UDim2.new(1, 0, 1, 0)
+activationFrame.BackgroundTransparency = 1
+activationFrame.Visible = false
+activationFrame.Parent = mainFrame
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 40)
+title.Position = UDim2.new(0, 0, 0, 10)
+title.BackgroundTransparency = 1
+title.Text = "XENO EXECUTOR SYSTEM"
+title.TextColor3 = Color3.fromRGB(140, 90, 255)
+title.TextSize = 18
+title.Font = Enum.Font.GothamBold
+title.Parent = activationFrame
+
+local textBox = Instance.new("TextBox")
+textBox.Size = UDim2.new(0, 280, 0, 35)
+textBox.Position = UDim2.new(0.5, -140, 0.35, 0)
+textBox.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+textBox.PlaceholderText = "Enter Activation Key..."
+textBox.PlaceholderColor3 = Color3.fromRGB(120, 120, 120)
+textBox.Text = ""
+textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+textBox.TextSize = 14
+textBox.Font = Enum.Font.Gotham
+textBox.Parent = activationFrame
+
+local boxCorner = Instance.new("UICorner")
+boxCorner.CornerRadius = UDim.new(0, 5)
+boxCorner.Parent = textBox
+
+local checkBtn = Instance.new("TextButton")
+checkBtn.Size = UDim2.new(0, 135, 0, 35)
+checkBtn.Position = UDim2.new(0.5, -140, 0.6, 0)
+checkBtn.BackgroundColor3 = Color3.fromRGB(120, 80, 220)
+checkBtn.Text = "Verify Key"
+checkBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+checkBtn.TextSize = 14
+checkBtn.Font = Enum.Font.GothamBold
+checkBtn.Parent = activationFrame
+
+local btnCorner1 = Instance.new("UICorner")
+btnCorner1.CornerRadius = UDim.new(0, 5)
+btnCorner1.Parent = checkBtn
+
+local getBtn = Instance.new("TextButton")
+getBtn.Size = UDim2.new(0, 135, 0, 35)
+getBtn.Position = UDim2.new(0.5, 5, 0.6, 0)
+getBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+getBtn.Text = "Get Key (Link)"
+getBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+getBtn.TextSize = 14
+getBtn.Font = Enum.Font.GothamBold
+getBtn.Parent = activationFrame
+
+local btnCorner2 = Instance.new("UICorner")
+btnCorner2.CornerRadius = UDim.new(0, 5)
+btnCorner2.Parent = getBtn
+
+local status = Instance.new("TextLabel")
+status.Size = UDim2.new(1, 0, 0, 25)
+status.Position = UDim2.new(0, 0, 0.85, 0)
+status.BackgroundTransparency = 1
+status.Text = "Waiting for input..."
+status.TextColor3 = Color3.fromRGB(150, 150, 150)
+status.TextSize = 12
+status.Font = Enum.Font.Gotham
+status.Parent = activationFrame
+
+local loading = true
+task.spawn(function()
+    while loading do
+        for i = 0, 3 do
+            if not loading then break end
+            loadingText.Text = "XENO | Loading" .. string.rep(".", i)
+            task.wait(0.4)
+        end
+    end
+end)
+
+task.wait(2.5)
+loading = false
+loadingFrame.Visible = false
+activationFrame.Visible = true
+
+getBtn.MouseButton1Click:Connect(function()
+    if setclipboard or toclipboard then
+        local copyFunc = setclipboard or toclipboard
+        copyFunc(KEY_LINK)
+        status.TextColor3 = Color3.fromRGB(80, 220, 120)
+        status.Text = "Link copied to your clipboard!"
+    else
+        textBox.Text = KEY_LINK
+        status.TextColor3 = Color3.fromRGB(220, 180, 80)
+        status.Text = "Clipboard error. Link copied to input box."
+    end
+end)
+
+checkBtn.MouseButton1Click:Connect(function()
+    if textBox.Text == CORRECT_KEY then
+        status.TextColor3 = Color3.fromRGB(80, 220, 120)
+        status.Text = "Key Approved!"
+        task.wait(0.5)
+        
+        local tInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        local tween = TweenService:Create(mainFrame, tInfo, {BackgroundTransparency = 1, Size = UDim2.new(0,0,0,0)})
+        
+        for _, v in pairs(activationFrame:GetChildren()) do v.Visible = false end
+        if uiStroke then uiStroke:Destroy() end
+        tween:Play()
+        
+        tween.Completed:Connect(function()
+            screenGui:Destroy()
+        end)
+    else
+        wrong_attempts = wrong_attempts + 1
+        textBox.Text = ""
+        
+        if wrong_attempts >= MAX_ATTEMPTS then
+            status.TextColor3 = Color3.fromRGB(255, 0, 0)
+            status.Text = "Kicking..."
+            task.wait(0.5)
+            -- Кик игрока с сервера с указанием причины
+            LocalPlayer:Kick("\n[Xeno Security]\nToo many incorrect key attempts.") [3]
+        else
+            status.TextColor3 = Color3.fromRGB(220, 80, 80)
+            status.Text = "Incorrect key! Attempts left: " .. tostring(MAX_ATTEMPTS - wrong_attempts)
+        end
+    end
+end)
