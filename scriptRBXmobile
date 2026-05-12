@@ -369,7 +369,6 @@ Services.RunService.Stepped:Connect(function()
         if hum then hum.WalkSpeed = 0 end
     end
 end)
-
 -- ========================================
 -- ОСНОВНЫЕ ФУНКЦИИ
 -- ========================================
