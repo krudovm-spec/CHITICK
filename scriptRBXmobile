@@ -248,7 +248,6 @@ local statusDots = Instance.new("Frame", loginBox)
 statusDots.Size = UDim2.new(1, -20, 0, 6)
 statusDots.Position = UDim2.new(0, 10, 0, 92)
 statusDots.BackgroundTransparency = 1
-
 for i = 1, 5 do
     local dot = Instance.new("Frame", statusDots)
     dot.Size = UDim2.new(0, 6, 0, 6)
