@@ -372,19 +372,6 @@ Services.RunService.Stepped:Connect(function()
     end
 end)
 
-local Settings = {
-    ESP = true,
-    AIMBOT = true,
-    KILL_AURA = true,
-    DEATH_MARKERS = true
-}
-
-local AimRadius = 150
-local KillAuraRange = 20
-local HeadSize = 8
-
-
-
 -- ========================================
 -- ОСНОВНЫЕ ФУНКЦИИ
 -- ========================================
