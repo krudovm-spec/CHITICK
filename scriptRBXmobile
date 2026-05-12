@@ -43,6 +43,7 @@ loadBg.BackgroundColor3 = Color3.fromRGB(5, 5, 8)
 loadBg.BorderSizePixel = 0
 
 -- Звёзды на фоне
+
 for i = 1, 40 do
     local dot = Instance.new("Frame", loadBg)
     dot.Size = UDim2.new(0, math.random(2, 4), 0, math.random(2, 4))
@@ -191,6 +192,7 @@ mainFrame.BackgroundColor3 = Color3.fromRGB(5, 5, 5)
 mainFrame.BorderSizePixel = 0
 
 -- Точки на фоне логина
+
 for i = 1, 15 do
     local dot = Instance.new("Frame", mainFrame)
     dot.Size = UDim2.new(0, 3, 0, 3)
