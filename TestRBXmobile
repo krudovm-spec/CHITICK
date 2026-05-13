@@ -1,188 +1,124 @@
---[[
-    XENO INJECTOR COMPATIBLE KEY SYSTEM + LOADING GUI (FIXED + KICK SYSTEM)
---]]
+--[[ FULL SCRIPT - ВСЕ ФУНКЦИИ + ГАЙКА СПРАВА ]]
+local Services={Players=game:GetService("Players"),UserInputService=game:GetService("UserInputService"),RunService=game:GetService("RunService"),TweenService=game:GetService("TweenService"),CoreGui=game:GetService("CoreGui")}
+local LP,Lighting,Camera,Workspace=Services.Players.LocalPlayer,game:GetService("Lighting"),workspace.CurrentCamera,game:GetService("Workspace")
+local CORRECT_KEY,KEY_LINK,LoadTime="FREE_SLAKINKODPC","https://t.me/HDVCHIKpublic/27",math.random(20,34)
+local isAuthenticated=false
+local FlyEnabled,NoclipEnabled,FlySpeed=false,false,50
+local FlyKeys={Forward=false,Backward=false,Left=false,Right=false,Up=false,Down=false}
+local Settings={ESP_Box=true,HP_Digits=true,HP_Bar=true,NameTag=true,Tool=true,Tracer=true,Crosshair=true,Aimbot=true,FPS_Boost=false,Fly=false,Noclip=false}
+local AimRadius,AimSmoothness,IsAiming=200,0.3,false
 
-local CORRECT_KEY = "FREE_SLAKINKODUPDATE"  -- Правильный ключ
-local KEY_LINK = "link-to-your-key.com" -- Ссылка на получение ключа
+-- ===== ЗАГРУЗКА =====
+local loadGui=Instance.new("ScreenGui",Services.CoreGui);loadGui.Name="L";loadGui.ResetOnSpawn=false;loadGui.IgnoreGuiInset=true;loadGui.ZIndex=999
+local loadBlur=Instance.new("BlurEffect",Lighting);loadBlur.Size=25
+local loadBg=Instance.new("Frame",loadGui);loadBg.Size=UDim2.new(1,0,1,0);loadBg.BackgroundColor3=Color3.new(0,0,0);loadBg.BorderSizePixel=0
+local lt=Instance.new("TextLabel",loadBg);lt.AnchorPoint=Vector2.new(0.5,0.5);lt.Position=UDim2.new(0.5,0,0.42,0);lt.Size=UDim2.new(0,200,0,40);lt.BackgroundTransparency=1;lt.Text="ЗАГРУЗКА";lt.TextColor3=Color3.new(1,1,1);lt.Font=Enum.Font.GothamBold;lt.TextSize=24
+local lp=Instance.new("TextLabel",loadBg);lp.AnchorPoint=Vector2.new(0.5,0.5);lp.Position=UDim2.new(0.5,0,0.5,0);lp.Size=UDim2.new(0,100,0,30);lp.BackgroundTransparency=1;lp.Text="0%";lp.TextColor3=Color3.fromRGB(100,180,255);lp.Font=Enum.Font.GothamBold;lp.TextSize=20
+local bb=Instance.new("Frame",loadBg);bb.AnchorPoint=Vector2.new(0.5,0.5);bb.Position=UDim2.new(0.5,0,0.56,0);bb.Size=UDim2.new(0,200,0,6);bb.BackgroundColor3=Color3.fromRGB(30,30,30);bb.BorderSizePixel=0;Instance.new("UICorner",bb).CornerRadius=UDim.new(0,3)
+local br=Instance.new("Frame",bb);br.Size=UDim2.new(0,0,1,0);br.BackgroundColor3=Color3.fromRGB(80,180,255);br.BorderSizePixel=0;Instance.new("UICorner",br).CornerRadius=UDim.new(0,3)
+local ls=Instance.new("TextLabel",loadBg);ls.AnchorPoint=Vector2.new(0.5,0.5);ls.Position=UDim2.new(0.5,0,0.62,0);ls.Size=UDim2.new(0,200,0,20);ls.BackgroundTransparency=1;ls.Text="Загрузка...";ls.TextColor3=Color3.fromRGB(120,120,120);ls.Font=Enum.Font.GothamMedium;ls.TextSize=12
+local loadDone=false
+task.spawn(function()local s=tick()local d=0;while tick()-s<LoadTime do local e=tick()-s;local p=math.floor((e/LoadTime)*100);lp.Text=p.."%";br.Size=UDim2.new(p/100,0,1,0);d=(d%3)+1;ls.Text="Загрузка"..string.rep(".",d);task.wait(0.2)end;lp.Text="100%";br.Size=UDim2.new(1,0,1,0);ls.Text="Готово!";task.wait(0.5);Services.TweenService:Create(loadBlur,TweenInfo.new(0.5),{Size=0}):Play();Services.TweenService:Create(loadBg,TweenInfo.new(0.5),{BackgroundTransparency=1}):Play();task.wait(0.5);loadBlur:Destroy();loadGui:Destroy();loadDone=true end)
+repeat task.wait(0.1)until loadDone
 
--- Счетчик неверных попыток ввода
-local wrong_attempts = 0
-local MAX_ATTEMPTS = 3
+-- ===== ЛОГИН =====
+local screenGui=Instance.new("ScreenGui",Services.CoreGui);screenGui.IgnoreGuiInset=true;screenGui.ResetOnSpawn=false;screenGui.Name="LockScreen"
+local blur=Instance.new("BlurEffect",Lighting);blur.Size=15
+local mainFrame=Instance.new("Frame",screenGui);mainFrame.Size=UDim2.new(1,0,1,0);mainFrame.BackgroundColor3=Color3.fromRGB(5,5,5);mainFrame.BorderSizePixel=0
+local loginBox=Instance.new("Frame",mainFrame);loginBox.AnchorPoint=Vector2.new(0.5,0.5);loginBox.Position=UDim2.new(0.5,0,0.4,0);loginBox.Size=UDim2.new(0.85,0,0,190);loginBox.BackgroundColor3=Color3.fromRGB(20,20,20);loginBox.BorderSizePixel=0;Instance.new("UICorner",loginBox).CornerRadius=UDim.new(0,12)
+local title=Instance.new("TextLabel",loginBox);title.Size=UDim2.new(1,-20,0,30);title.Position=UDim2.new(0,10,0,10);title.Text="🔐 ENTER KEY";title.TextColor3=Color3.new(1,1,1);title.Font=Enum.Font.GothamBold;title.TextSize=16;title.BackgroundTransparency=1;title.TextXAlignment=Enum.TextXAlignment.Left
+local keyInput=Instance.new("TextBox",loginBox);keyInput.Size=UDim2.new(1,-20,0,40);keyInput.Position=UDim2.new(0,10,0,45);keyInput.PlaceholderText="Ключ...";keyInput.PlaceholderColor3=Color3.fromRGB(150,150,150);keyInput.BackgroundColor3=Color3.fromRGB(35,35,35);keyInput.TextColor3=Color3.new(1,1,1);keyInput.Font=Enum.Font.GothamMedium;keyInput.TextSize=14;keyInput.ClearTextOnFocus=false;Instance.new("UICorner",keyInput).CornerRadius=UDim.new(0,8)
+local activateBtn=Instance.new("TextButton",loginBox);activateBtn.Size=UDim2.new(1,-20,0,40);activateBtn.Position=UDim2.new(0,10,0,95);activateBtn.BackgroundColor3=Color3.fromRGB(0,130,255);activateBtn.Text="ACTIVATE";activateBtn.TextColor3=Color3.new(1,1,1);activateBtn.Font=Enum.Font.GothamBold;activateBtn.TextSize=14;Instance.new("UICorner",activateBtn).CornerRadius=UDim.new(0,8)
+local getKeyBtn=Instance.new("TextButton",loginBox);getKeyBtn.Size=UDim2.new(1,-20,0,30);getKeyBtn.Position=UDim2.new(0,10,0,145);getKeyBtn.BackgroundColor3=Color3.fromRGB(40,40,40);getKeyBtn.Text="🔑 GET KEY";getKeyBtn.TextColor3=Color3.fromRGB(150,150,150);getKeyBtn.Font=Enum.Font.GothamMedium;getKeyBtn.TextSize=12;Instance.new("UICorner",getKeyBtn).CornerRadius=UDim.new(0,8)
+local attempts=0
+getKeyBtn.MouseButton1Click:Connect(function()if setclipboard then setclipboard(KEY_LINK);getKeyBtn.Text="✅ COPIED!";getKeyBtn.TextColor3=Color3.new(0.3,1,0.3);task.wait(1.5);getKeyBtn.Text="🔑 GET KEY";getKeyBtn.TextColor3=Color3.fromRGB(150,150,150)end end)
 
-if game:GetService("CoreGui"):FindFirstChild("XenoKeySystem") then
-    game:GetService("CoreGui"):FindFirstChild("XenoKeySystem"):Destroy()
-end
-
-local CoreGui = game:GetService("CoreGui")
-local TweenService = game:GetService("TweenService")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "XenoKeySystem"
-screenGui.Parent = CoreGui
-screenGui.IgnoreGuiInset = true
-
-local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 360, 0, 220)
-mainFrame.Position = UDim2.new(0.5, -180, 0.5, -110)
-mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25) 
-mainFrame.BorderSizePixel = 0
-mainFrame.Active = true
-mainFrame.Draggable = true 
-mainFrame.Parent = screenGui
-
-local uiCorner = Instance.new("UICorner")
-uiCorner.CornerRadius = UDim.new(0, 10)
-uiCorner.Parent = mainFrame
-
-local uiStroke = Instance.new("UIStroke")
-uiStroke.Color = Color3.fromRGB(120, 80, 220) 
-uiStroke.Thickness = 2
-uiStroke.Parent = mainFrame
-
-local loadingFrame = Instance.new("Frame")
-loadingFrame.Size = UDim2.new(1, 0, 1, 0)
-loadingFrame.BackgroundTransparency = 1
-loadingFrame.Parent = mainFrame
-
-local loadingText = Instance.new("TextLabel")
-loadingText.Size = UDim2.new(1, 0, 1, 0)
-loadingText.BackgroundTransparency = 1
-loadingText.Text = "XENO | Loading"
-loadingText.TextColor3 = Color3.fromRGB(255, 255, 255)
-loadingText.TextSize = 22
-loadingText.Font = Enum.Font.GothamBold
-loadingText.Parent = loadingFrame
-
-local activationFrame = Instance.new("Frame")
-activationFrame.Size = UDim2.new(1, 0, 1, 0)
-activationFrame.BackgroundTransparency = 1
-activationFrame.Visible = false
-activationFrame.Parent = mainFrame
-
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 40)
-title.Position = UDim2.new(0, 0, 0, 10)
-title.BackgroundTransparency = 1
-title.Text = "XENO EXECUTOR SYSTEM"
-title.TextColor3 = Color3.fromRGB(140, 90, 255)
-title.TextSize = 18
-title.Font = Enum.Font.GothamBold
-title.Parent = activationFrame
-
-local textBox = Instance.new("TextBox")
-textBox.Size = UDim2.new(0, 280, 0, 35)
-textBox.Position = UDim2.new(0.5, -140, 0.35, 0)
-textBox.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-textBox.PlaceholderText = "Enter Activation Key..."
-textBox.PlaceholderColor3 = Color3.fromRGB(120, 120, 120)
-textBox.Text = ""
-textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-textBox.TextSize = 14
-textBox.Font = Enum.Font.Gotham
-textBox.Parent = activationFrame
-
-local boxCorner = Instance.new("UICorner")
-boxCorner.CornerRadius = UDim.new(0, 5)
-boxCorner.Parent = textBox
-
-local checkBtn = Instance.new("TextButton")
-checkBtn.Size = UDim2.new(0, 135, 0, 35)
-checkBtn.Position = UDim2.new(0.5, -140, 0.6, 0)
-checkBtn.BackgroundColor3 = Color3.fromRGB(120, 80, 220)
-checkBtn.Text = "Verify Key"
-checkBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-checkBtn.TextSize = 14
-checkBtn.Font = Enum.Font.GothamBold
-checkBtn.Parent = activationFrame
-
-local btnCorner1 = Instance.new("UICorner")
-btnCorner1.CornerRadius = UDim.new(0, 5)
-btnCorner1.Parent = checkBtn
-
-local getBtn = Instance.new("TextButton")
-getBtn.Size = UDim2.new(0, 135, 0, 35)
-getBtn.Position = UDim2.new(0.5, 5, 0.6, 0)
-getBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
-getBtn.Text = "Get Key (Link)"
-getBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
-getBtn.TextSize = 14
-getBtn.Font = Enum.Font.GothamBold
-getBtn.Parent = activationFrame
-
-local btnCorner2 = Instance.new("UICorner")
-btnCorner2.CornerRadius = UDim.new(0, 5)
-btnCorner2.Parent = getBtn
-
-local status = Instance.new("TextLabel")
-status.Size = UDim2.new(1, 0, 0, 25)
-status.Position = UDim2.new(0, 0, 0.85, 0)
-status.BackgroundTransparency = 1
-status.Text = "Waiting for input..."
-status.TextColor3 = Color3.fromRGB(150, 150, 150)
-status.TextSize = 12
-status.Font = Enum.Font.Gotham
-status.Parent = activationFrame
-
-local loading = true
-task.spawn(function()
-    while loading do
-        for i = 0, 3 do
-            if not loading then break end
-            loadingText.Text = "XENO | Loading" .. string.rep(".", i)
-            task.wait(0.4)
-        end
-    end
-end)
-
-task.wait(2.5)
-loading = false
-loadingFrame.Visible = false
-activationFrame.Visible = true
-
-getBtn.MouseButton1Click:Connect(function()
-    if setclipboard or toclipboard then
-        local copyFunc = setclipboard or toclipboard
-        copyFunc(KEY_LINK)
-        status.TextColor3 = Color3.fromRGB(80, 220, 120)
-        status.Text = "Link copied to your clipboard!"
+activateBtn.MouseButton1Click:Connect(function()
+    local t=keyInput.Text:gsub("^%s+",""):gsub("%s+$","")
+    if t==CORRECT_KEY then
+        isAuthenticated=true
+        activateBtn.Text="✅ SUCCESS";activateBtn.BackgroundColor3=Color3.new(0,0.8,0)
+        pcall(function()local c=LP.Character;if c then local h=c:FindFirstChildOfClass("Humanoid");if h then h.WalkSpeed=16;h.JumpPower=50 end end end)
+        task.wait(0.8)
+        Services.TweenService:Create(blur,TweenInfo.new(0.5),{Size=0}):Play()
+        local fo=Services.TweenService:Create(mainFrame,TweenInfo.new(0.5),{BackgroundTransparency=1});fo:Play()
+        fo.Completed:Connect(function()blur:Destroy();screenGui:Destroy();StartAll()end)
     else
-        textBox.Text = KEY_LINK
-        status.TextColor3 = Color3.fromRGB(220, 180, 80)
-        status.Text = "Clipboard error. Link copied to input box."
+        attempts=attempts+1
+        if attempts>=3 then LP:Kick("Неверный ключ 3 раза!")return end
+        activateBtn.Text="❌ WRONG ("..attempts.."/3)";activateBtn.BackgroundColor3=Color3.new(0.8,0,0)
+        task.wait(2);activateBtn.Text="ACTIVATE";activateBtn.BackgroundColor3=Color3.fromRGB(0,130,255)
     end
 end)
 
-checkBtn.MouseButton1Click:Connect(function()
-    if textBox.Text == CORRECT_KEY then
-        status.TextColor3 = Color3.fromRGB(80, 220, 120)
-        status.Text = "Key Approved!"
-        task.wait(0.5)
-        
-        local tInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-        local tween = TweenService:Create(mainFrame, tInfo, {BackgroundTransparency = 1, Size = UDim2.new(0,0,0,0)})
-        
-        for _, v in pairs(activationFrame:GetChildren()) do v.Visible = false end
-        if uiStroke then uiStroke:Destroy() end
-        tween:Play()
-        
-        tween.Completed:Connect(function()
-            screenGui:Destroy()
-        end)
-    else
-        wrong_attempts = wrong_attempts + 1
-        textBox.Text = ""
-        
-        if wrong_attempts >= MAX_ATTEMPTS then
-            status.TextColor3 = Color3.fromRGB(255, 0, 0)
-            status.Text = "Kicking..."
-            task.wait(0.5)
-            -- Кик игрока с сервера с указанием причины
-            LocalPlayer:Kick("\n[Xeno Security]\nToo many incorrect key attempts.") [3]
-        else
-            status.TextColor3 = Color3.fromRGB(220, 80, 80)
-            status.Text = "Incorrect key! Attempts left: " .. tostring(MAX_ATTEMPTS - wrong_attempts)
-        end
-    end
+Services.RunService.Stepped:Connect(function()
+    if isAuthenticated then return end
+    local c=LP.Character;if c then local h=c:FindFirstChildOfClass("Humanoid");if h then h.WalkSpeed=0 end end
 end)
+
+-- ===== ВСЕ ФУНКЦИИ =====
+function StartAll()
+    -- ESP BOX
+    local function espBox(char)local h=nil;for _=1,200 do h=char:FindFirstChild("Head");if h then break end;task.wait(0.05)end;if not h then return end;for _,v in ipairs(char:GetDescendants())do if v:IsA("BillboardGui")and v.Name=="ESP_Box"then pcall(function()v:Destroy()end)end end;local b=Instance.new("BillboardGui",h);b.Name="ESP_Box";b.Adornee=h;b.Size=UDim2.new(0,45,0,45);b.StudsOffset=Vector3.new(0,0.8,0);b.AlwaysOnTop=true;local f=Instance.new("Frame",b);f.Size=UDim2.new(1,0,1,0);f.BackgroundTransparency=1;f.BorderColor3=Color3.new(1,1,1);f.BorderSizePixel=2 end
+    -- HP DIGITS
+    local function hpDigits(char)local h,hm=nil,nil;for _=1,200 do h=char:FindFirstChild("Head");hm=char:FindFirstChildOfClass("Humanoid");if h and hm then break end;task.wait(0.05)end;if not h or not hm then return end;for _,v in ipairs(char:GetDescendants())do if v:IsA("BillboardGui")and v.Name=="HP_D"then pcall(function()v:Destroy()end)end end;local
+b=Instance.new("BillboardGui",h);b.Name="HP_D";b.Adornee=h;b.Size=UDim2.new(0,50,0,14);b.StudsOffset=Vector3.new(0,1.5,0);b.AlwaysOnTop=true;local l=Instance.new("TextLabel",b);l.Size=UDim2.new(1,0,1,0);l.BackgroundTransparency=1;l.Font=Enum.Font.GothamBold;l.TextSize=10;l.TextStrokeTransparency=0.5;l.TextXAlignment=Enum.TextXAlignment.Left;local function u(hp)local p=hp/hm.MaxHealth;l.Text=math.floor(hp).." HP";l.TextColor3=p>0.6 and Color3.new(0.2,1,0.2)or p>0.3 and Color3.new(1,0.8,0)or Color3.new(1,0.2,0.2)end;u(hm.Health);hm.HealthChanged:Connect(u);hm.Died:Connect(function()pcall(function()b:Destroy()end)end)end
+    -- HP BAR
+    local function hpBar(char)local h,hm=nil,nil;for _=1,200 do h=char:FindFirstChild("Head");hm=char:FindFirstChildOfClass("Humanoid");if h and hm then break end;task.wait(0.05)end;if not h or not hm then return end;for _,v in ipairs(char:GetDescendants())do if v:IsA("BillboardGui")and v.Name=="HP_B"then pcall(function()v:Destroy()end)end end;local b=Instance.new("BillboardGui",h);b.Name="HP_B";b.Adornee=h;b.Size=UDim2.new(0,50,0,6);b.StudsOffset=Vector3.new(0,2,0);b.AlwaysOnTop=true;local bg=Instance.new("Frame",b);bg.Size=UDim2.new(1,0,0,4);bg.Position=UDim2.new(0,0,0,1);bg.BackgroundColor3=Color3.new(0.2,0.2,0.2);bg.BorderSizePixel=0;local brr=Instance.new("Frame",bg);local p=hm.Health/hm.MaxHealth;brr.Size=UDim2.new(p,0,1,0);brr.BackgroundColor3=p>0.6 and Color3.new(0.3,1,0.3)or p>0.3 and Color3.new(1,0.8,0)or Color3.new(1,0.3,0.3);brr.BorderSizePixel=0;hm.HealthChanged:Connect(function(hp)pcall(function()local pp=hp/hm.MaxHealth;brr.Size=UDim2.new(pp,0,1,0);brr.BackgroundColor3=pp>0.6 and Color3.new(0.3,1,0.3)or pp>0.3 and Color3.new(1,0.8,0)or Color3.new(1,0.3,0.3)end)end);hm.Died:Connect(function()pcall(function()b:Destroy()end)end)end
+    -- NAME TAG
+    local function nameTag(char,p)local h=nil;for _=1,200 do h=char:FindFirstChild("Head");if h then break end;task.wait(0.05)end;if not h then return end;for _,v in ipairs(char:GetDescendants())do if v:IsA("BillboardGui")and v.Name=="N_T"then pcall(function()v:Destroy()end)end end;local b=Instance.new("BillboardGui",h);b.Name="N_T";b.Adornee=h;b.Size=UDim2.new(0,80,0,14);b.StudsOffset=Vector3.new(0,2.7,0);b.AlwaysOnTop=true;local l=Instance.new("TextLabel",b);l.Size=UDim2.new(1,0,1,0);l.BackgroundTransparency=1;l.Text=p.Name;l.TextColor3=Color3.new(1,1,1);l.Font=Enum.Font.GothamBold;l.TextSize=10;l.TextStrokeTransparency=0.5 end
+    -- TOOL
+    local function toolTag(char)local h=nil;for _=1,200 do h=char:FindFirstChild("Head");if h then break end;task.wait(0.05)end;if not h then return end;for _,v in ipairs(char:GetDescendants())do if v:IsA("BillboardGui")and v.Name=="T_T"then pcall(function()v:Destroy()end)end end;local b=Instance.new("BillboardGui",h);b.Name="T_T";b.Adornee=h;b.Size=UDim2.new(0,60,0,14);b.StudsOffset=Vector3.new(0,1.5,0);b.AlwaysOnTop=true;local l=Instance.new("TextLabel",b);l.Size=UDim2.new(1,0,1,0);l.BackgroundTransparency=1;l.TextColor3=Color3.new(1,0.8,0.3);l.Font=Enum.Font.GothamMedium;l.TextSize=10;l.TextStrokeTransparency=0.5;l.TextXAlignment=Enum.TextXAlignment.Right;task.spawn(function()while char:IsDescendantOf(game)do pcall(function()local t=char:FindFirstChildOfClass("Tool");l.Text=t and t.Name or""end);task.wait(0.5)end end)end
+    -- TRACER
+    local tracers={}
+    local function createTracer(player)local line=Drawing.new("Line");line.Color=Color3.new(1,1,1);line.Thickness=1;line.Transparency=0.5;line.Visible=true;tracers[player]=line;Services.RunService.RenderStepped:Connect(function()local c=player.Character;local r=c and c:FindFirstChild("HumanoidRootPart");if r and player~=LP then local sp,os=Camera:WorldToViewportPoint(r.Position);local ss=Camera.ViewportSize;local bc=Vector2.new(ss.X/2,ss.Y);if os then line.From=bc;line.To=Vector2.new(sp.X,sp.Y);line.Visible=true else line.Visible=false end else line.Visible=false end end)end
+-- CROSSHAIR
+    local crossLine=Drawing.new("Line");crossLine.Color=Color3.new(1,1,1);crossLine.Thickness=1;crossLine.Transparency=0.4;crossLine.Visible=true
+    Services.RunService.RenderStepped:Connect(function()local ss=Camera.ViewportSize;local cx=ss.X/2;crossLine.From=Vector2.new(cx,ss.Y-20);crossLine.To=Vector2.new(cx,ss.Y)end)
+    -- AIMBOT
+    local fovCircle=Drawing.new("Circle");fovCircle.Radius=AimRadius;fovCircle.Thickness=1;fovCircle.Color=Color3.new(1,1,1);fovCircle.Transparency=0.6;fovCircle.Filled=false;fovCircle.Visible=false
+    local function getClosest()local t=nil;local md=AimRadius;local mp=Services.UserInputService:GetMouseLocation();for _,p in ipairs(Services.Players:GetPlayers())do if p~=LP and p.Character then local h=p.Character:FindFirstChild("Head");if h then local po,vi=Camera:WorldToViewportPoint(h.Position);if vi then local d=(Vector2.new(po.X,po.Y)-mp).Magnitude;if d<md then md=d;t=p end end end end;return t end
+    Services.UserInputService.InputBegan:Connect(function(i)if i.UserInputType==Enum.UserInputType.MouseButton2 then IsAiming=true;fovCircle.Visible=true end end)
+    Services.UserInputService.InputEnded:Connect(function(i)if i.UserInputType==Enum.UserInputType.MouseButton2 then IsAiming=false;fovCircle.Visible=false end end)
+    Services.RunService.RenderStepped:Connect(function()fovCircle.Position=Services.UserInputService:GetMouseLocation();if IsAiming then local t=getClosest();if t and t.Character and t.Character:FindFirstChild("Head")then Camera.CFrame=Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position,t.Character.Head.Position),AimSmoothness)end end end)
+    -- FPS BOOST
+    local function fpsBoost(s)Lighting.GlobalShadows=not s;Workspace.StreamingMinRadius=s and 32 or 64;Workspace.StreamingTargetRadius=s and 64 or 256;if s then for _,o in ipairs(Workspace:GetDescendants())do if o:IsA("Decal")or o:IsA("Texture")then pcall(function()o:Destroy()end)end;if o:IsA("ParticleEmitter")or o:IsA("Trail")then o.Enabled=false end end;Lighting.Bloom.Enabled=false;Lighting.Blur.Enabled=false;Lighting.ColorCorrection.Enabled=false;Lighting.SunRays.Enabled=false;Lighting.DepthOfField.Enabled=false else Lighting.Bloom.Enabled=true;Lighting.ColorCorrection.Enabled=true;Workspace.StreamingMinRadius=64;Workspace.StreamingTargetRadius=256 end end
+    -- NOCLIP
+    local function setNoclip(s)local c=LP.Character;if not c then return end;for _,v in ipairs(c:GetDescendants())do if v:IsA("BasePart")then v.CanCollide=not s end end end
+    LP.CharacterAdded:Connect(function()if NoclipEnabled then task.wait(0.1);setNoclip(true)end end)
+    -- FLY
+    local function flyLoop()local c=LP.Character;if not c then return end;local r=c:FindFirstChild("HumanoidRootPart");local h=c:FindFirstChildOfClass("Humanoid");if not r or not h then return end;h.PlatformStand=true;r.Velocity=Vector3.zero;local d=Vector3.zero;local cf=Camera.CFrame;if FlyKeys.Forward then d+=cf.LookVector end;if FlyKeys.Backward then d-=cf.LookVector end;if FlyKeys.Right then d+=cf.RightVector end;if FlyKeys.Left then d-=cf.RightVector end;if FlyKeys.Up then d+=Vector3.new(0,1,0)end;if FlyKeys.Down then d-=Vector3.new(0,1,0)end;if d.Magnitude>0 then r.Velocity=d.Unit*FlySpeed end end
+    Services.RunService.Stepped:Connect(function()if NoclipEnabled then setNoclip(true)end;if FlyEnabled then flyLoop()end end)
+
+    -- ПРИМЕНЕНИЕ ESP КО ВСЕМ
+    local function addPlayer(player)if player==LP then return end;task.spawn(function()if player.Character then local c=player.Character;if Settings.ESP_Box then espBox(c)end;if Settings.HP_Digits then hpDigits(c)end;if Settings.HP_Bar then hpBar(c)end;if Settings.NameTag then nameTag(c,player)end;if Settings.Tool then toolTag(c)end end;player.CharacterAdded:Connect(function(c)task.wait(0.3);if Settings.ESP_Box then espBox(c)end;if Settings.HP_Digits then hpDigits(c)end;if Settings.HP_Bar then hpBar(c)end;if Settings.NameTag then nameTag(c,player)end;if Settings.Tool then toolTag(c)end end)end)end
+for _,p in ipairs(Services.Players:GetPlayers())do addPlayer(p);if Settings.Tracer then createTracer(p)end end
+    Services.Players.PlayerAdded:Connect(function(p)addPlayer(p);if Settings.Tracer then createTracer(p)end end)
+    
+    task.spawn(function()while true do task.wait(2);for _,p in ipairs(Services.Players:GetPlayers())do if p~=LP and p.Character then local c=p.Character;local f=false;for _,v in ipairs(c:GetDescendants())do if v:IsA("BillboardGui")and(v.Name=="ESP_Box"or v.Name=="HP_D"or v.Name=="HP_B"or v.Name=="N_T"or v.Name=="T_T")then f=true;break end end;if not f then if Settings.ESP_Box then espBox(c)end;if Settings.HP_Digits then hpDigits(c)end;if Settings.HP_Bar then hpBar(c)end;if Settings.NameTag then nameTag(c,p)end;if Settings.Tool then toolTag(c)end end end end end end)
+
+    -- ===== МЕНЮ НАСТРОЕК (ГАЙКА) =====
+    local menu=Instance.new("ScreenGui",Services.CoreGui);menu.Name="SettingsHub";menu.IgnoreGuiInset=true
+    local mf=Instance.new("Frame",menu);mf.AnchorPoint=Vector2.new(1,0.5);mf.Position=UDim2.new(1,-52,0.5,0);mf.Size=UDim2.new(0,155,0,400);mf.BackgroundColor3=Color3.fromRGB(15,15,15);mf.BackgroundTransparency=0.5;mf.BorderSizePixel=0;mf.Visible=false;Instance.new("UICorner",mf).CornerRadius=UDim.new(0,10)
+    local gb=Instance.new("TextButton",menu);gb.AnchorPoint=Vector2.new(1,0.5);gb.Position=UDim2.new(1,-8,0.5,0);gb.Size=UDim2.new(0,36,0,36);gb.BackgroundColor3=Color3.fromRGB(20,20,20);gb.BackgroundTransparency=0.4;gb.Text="⚙️";gb.TextSize=20;gb.BorderSizePixel=0;Instance.new("UICorner",gb).CornerRadius=UDim.new(1,0);gb.MouseButton1Click:Connect(function()mf.Visible=not mf.Visible end)
+    
+    local function ct(parent,name,y,def,cb)local t=Instance.new("TextButton",parent);t.Size=UDim2.new(1,-16,0,28);t.Position=UDim2.new(0,8,0,y);t.BackgroundColor3=def and Color3.fromRGB(50,255,50)or Color3.fromRGB(255,50,50);t.Text="  "..name.."  "..(def and"ON"or"OFF");t.TextColor3=Color3.new(1,1,1);t.Font=Enum.Font.GothamMedium;t.TextSize=11;t.TextXAlignment=Enum.TextXAlignment.Left;t.BorderSizePixel=0;t.AutoButtonColor=false;Instance.new("UICorner",t).CornerRadius=UDim.new(0,6);local s=def;t.MouseButton1Click:Connect(function()s=not s;t.BackgroundColor3=s and Color3.fromRGB(50,255,50)or Color3.fromRGB(255,50,50);t.Text="  "..name.."  "..(s and"ON"or"OFF");cb(s)end);return t end
+    
+    local tl=Instance.new("TextLabel",mf);tl.Size=UDim2.new(1,0,0,20);tl.Position=UDim2.new(0,0,0,6);tl.Text="⚙️ НАСТРОЙКИ";tl.TextColor3=Color3.new(1,1,1);tl.Font=Enum.Font.GothamBold;tl.TextSize=12;tl.BackgroundTransparency=1
+    
+    local y=28
+    ct(mf,"ESP Box",y,Settings.ESP_Box,function(s)Settings.ESP_Box=s end);y=y+32
+    ct(mf,"HP Digits",y,Settings.HP_Digits,function(s)Settings.HP_Digits=s end);y=y+32
+    ct(mf,"HP Bar",y,Settings.HP_Bar,function(s)Settings.HP_Bar=s end);y=y+32
+    ct(mf,"Name",y,Settings.NameTag,function(s)Settings.NameTag=s end);y=y+32
+    ct(mf,"Tool",y,Settings.Tool,function(s)Settings.Tool=s end);y=y+32
+    ct(mf,"Tracer",y,Settings.Tracer,function(s)Settings.Tracer=s end);y=y+32
+    ct(mf,"Crosshair",y,Settings.Crosshair,function(s)Settings.Crosshair=s;crossLine.Visible=s end);y=y+32
+    ct(mf,"Aimbot",y,Settings.Aimbot,function(s)Settings.Aimbot=s end);y=y+32
+    ct(mf,"FPS Boost",y,Settings.FPS_Boost,function(s)Settings.FPS_Boost=s;fpsBoost(s)end);y=y+32
+    ct(mf,"Noclip",y,Settings.Noclip,function(s)Settings.Noclip=s;NoclipEnabled=s;setNoclip(s)end);y=y+32
+    ct(mf,"Fly",y,Settings.Fly,function(s)Settings.Fly=s;FlyEnabled=s;if not s then pcall(function()local c=LP.Character;if c then local h=c:FindFirstChildOfClass("Humanoid");if h then h.PlatformStand=false end end end)end end)
+    
+    -- Кнопки Fly
+    local df=Instance.new("Frame",menu);df.AnchorPoint=Vector2.new(0,0.5);df.Position=UDim2.new(0,60,0.5,80);df.Size=UDim2.new(0,80,0,80);df.BackgroundTransparency=1;df.Visible=false
+local function db(n,x,yy,tx,key)local b=Instance.new("TextButton",df);b.Size=UDim2.new(0,28,0,28);b.Position=UDim2.new(0,x,0,yy);b.BackgroundColor3=Color3.fromRGB(100,100,100);b.BackgroundTransparency=0.3;b.Text=tx;b.TextColor3=Color3.new(1,1,1);b.Font=Enum.Font.GothamBold;b.TextS
