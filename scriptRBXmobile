@@ -1,8 +1,3 @@
---[[
-    MOBILE-FRIENDLY SCRIPT FOR XENO (FIXED)
-    Красивая загрузка + визуал активации
-]]
-
 local Services = {
     Players = game:GetService("Players"),
     UserInputService = game:GetService("UserInputService"),
@@ -172,7 +167,6 @@ task.spawn(function()
     loadGui:Destroy()
     loadDone = true
 end)
-
 repeat task.wait(0.1) until loadDone
 
 -- ========================================
@@ -341,6 +335,7 @@ activateBtn.MouseButton1Click:Connect(function()
         end
         
         -- Зажигаем точки красным по количеству попыток
+
 for i = 1, 3 do
             local dot = statusDots:FindFirstChild("Dot"..i)
             if dot then
@@ -371,6 +366,8 @@ Services.RunService.Stepped:Connect(function()
         if hum then hum.WalkSpeed = 0 end
     end
 end)
+--[[
+ CHEAT+PORNO
 -- ========================================
 -- ОСНОВНЫЕ ФУНКЦИИ
 -- ========================================
@@ -559,7 +556,6 @@ function StartScript()
     end
 end
 
---[[
     --[[
     FLY + NOCLIP | XENO MOBILE (ИСПРАВЛЕНО)
     Зажимай пробел (стрелку вверх) — летишь вверх
