@@ -1,17 +1,17 @@
 --[[
-    NEBULA CHEAT V4.1 - ИСПРАВЛЕННАЯ ВЕРСИЯ
-    • Выбор ПК/Телефон при запуске
-    • ESP: Трассеры, Боксы, ХП Бары
-    • Аимбот, Триггербот, Скинченжер
-    • Анти-Бан, Анти-Кик, Анти-АФК
+    HENO CHEAT - Исправленная версия
+    • Кнопка "ХЕНОЧИТ" для открытия меню
+    • Активация по коду: FREE_SLAKINKODUPDATE
+    • Таймер 12 часов (сохраняется)
+    • Прозрачный таймер слева внизу
+    • Все функции работают
 ]]
 
--- Ждём загрузки игрока
+-- Ждём загрузки
 if not game:IsLoaded() then
     game.Loaded:Wait()
 end
 
--- Сервисы
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -19,8 +19,6 @@ local TweenService = game:GetService("TweenService")
 local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
-local Lighting = game:GetService("Lighting")
-local VirtualUser = game:GetService("VirtualUser")
 
 -- Ждём персонажа
 if not LocalPlayer.Character then
@@ -28,540 +26,654 @@ if not LocalPlayer.Character then
 end
 
 --==============================================
--- ВЫБОР УСТРОЙСТВА ПРИ ЗАПУСКЕ
+-- СИСТЕМА АКТИВАЦИИ
 --==============================================
-local DeviceType = nil -- "PC" или "Mobile"
+local ACTIVATION_CODE = "FREE_SLAKINKODUPDATE"
+local ACTIVATION_HOURS = 12
+local SAVE_FILE = "HenoCheat_Time.json"
 
--- Проверка, сохранён ли выбор
-local deviceFile = "Nebula_Device.txt"
-local savedDevice = nil
-pcall(function()
-    savedDevice = readfile(deviceFile)
+local Activated = false
+local ExpiryTime = 0
+local RemainingSeconds = 0
+
+-- Загрузка сохранения
+local function LoadTime()
+    local ok, data = pcall(function()
+        return readfile(SAVE_FILE)
+    end)
+    
+    if ok and data then
+        local tbl = HttpService:JSONDecode(data)
+        if tbl.expiry and os.time() < tbl.expiry then
+            Activated = true
+            ExpiryTime = tbl.expiry
+            RemainingSeconds = tbl.expiry - os.time()
+            return true
+        end
+    end
+    return false
+end
+
+-- Сохранение
+local function SaveTime()
+    local data = {expiry = ExpiryTime}
+    pcall(function()
+        writefile(SAVE_FILE, HttpService:JSONEncode(data))
+    end)
+end
+
+-- Активация
+local function DoActivate()
+    ExpiryTime = os.time() + (ACTIVATION_HOURS * 3600)
+    Activated = true
+    RemainingSeconds = ACTIVATION_HOURS * 3600
+    SaveTime()
+end
+
+-- Формат времени
+local function FormatTime(sec)
+    local h = math.floor(sec / 3600)
+    local m = math.floor((sec % 3600) / 60)
+    local s = math.floor(sec % 60)
+    return string.format("%02d:%02d:%02d", h, m, s)
+end
+
+-- Проверка при старте
+local alreadyActivated = LoadTime()
+
+--==============================================
+-- ПЕРЕМЕННЫЕ
+--==============================================
+local aimbotOn = false
+local espOn = false
+local speedOn = false
+local triggerOn = false
+local aimKey = Enum.KeyCode.E
+local speedX = 2
+local normalSpeed = 16
+local espList = {}
+local menuOpen = false
+
+--==============================================
+-- GUI
+--==============================================
+local gui = Instance.new("ScreenGui")
+gui.Name = "HenoMain"
+gui.Parent = game:GetService("CoreGui")
+gui.ResetOnSpawn = false
+
+--==============================================
+-- ТАЙМЕР (левый нижний угол)
+--==============================================
+local timerFrame = Instance.new("Frame")
+timerFrame.Parent = gui
+timerFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+timerFrame.BackgroundTransparency = 0.8
+timerFrame.Size = UDim2.new(0, 150, 0, 28)
+timerFrame.Position = UDim2.new(0, 8, 1, -38)
+timerFrame.Visible = false
+timerFrame.BorderSizePixel = 0
+
+local tc = Instance.new("UICorner")
+tc.CornerRadius = UDim.new(0, 5)
+tc.Parent = timerFrame
+
+local timerText = Instance.new("TextLabel")
+timerText.Parent = timerFrame
+timerText.BackgroundTransparency = 1
+timerText.Size = UDim2.new(1, 0, 1, 0)
+timerText.Font = Enum.Font.GothamBold
+timerText.Text = "12:00:00"
+timerText.TextColor3 = Color3.fromRGB(255, 180, 180)
+timerText.TextTransparency = 0.4
+timerText.TextSize = 13
+
+-- Обновление таймера
+task.spawn(function()
+    while true do
+        if Activated then
+            timerFrame.Visible = true
+            local left = ExpiryTime - os.time()
+            RemainingSeconds = left
+            
+            if left <= 0 then
+                Activated = falseExpiryTime = 0
+                SaveTime()
+                timerFrame.Visible = false
+                if mainMenu then mainMenu.Visible = false end
+                floatBtn.Visible = true
+                menuOpen = false
+            else
+                timerText.Text = FormatTime(left)
+                
+                if left < 1800 then
+                    timerText.TextColor3 = Color3.fromRGB(255, 80, 80)
+                elseif left < 7200 then
+                    timerText.TextColor3 = Color3.fromRGB(255, 180, 80)
+                else
+                    timerText.TextColor3 = Color3.fromRGB(255, 180, 180)
+                end
+            end
+        else
+            timerFrame.Visible = false
+        end
+        task.wait(1)
+    end
 end)
 
-if savedDevice == "PC" or savedDevice == "Mobile" then
-    DeviceType = savedDevice
-else
-    -- Создаём меню выбора
-    local SelectGui = Instance.new("ScreenGui")
-    SelectGui.Name = "DeviceSelector"
-    SelectGui.Parent = game:GetService("CoreGui")
-    SelectGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+--==============================================
+-- ПЛАВАЮЩАЯ КНОПКА
+--==============================================
+local floatBtn = Instance.new("TextButton")
+floatBtn.Parent = gui
+floatBtn.BackgroundColor3 = Color3.fromRGB(200, 30, 30)
+floatBtn.BackgroundTransparency = 0.12
+floatBtn.Size = UDim2.new(0, 125, 0, 34)
+floatBtn.Position = UDim2.new(0.02, 0, 0.06, 0)
+floatBtn.Text = "ХЕНОЧИТ"
+floatBtn.Font = Enum.Font.GothamBold
+floatBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+floatBtn.TextSize = 15
+floatBtn.BorderSizePixel = 0
+floatBtn.AutoButtonColor = false
+
+if alreadyActivated then
+    floatBtn.Visible = false
+end
+
+local fc = Instance.new("UICorner")
+fc.CornerRadius = UDim.new(0, 7)
+fc.Parent = floatBtn
+
+local fs = Instance.new("UIStroke")
+fs.Color = Color3.fromRGB(255, 100, 100)
+fs.Thickness = 1.5
+fs.Transparency = 0.5
+fs.Parent = floatBtn
+
+-- Перетаскивание кнопки
+local dragOn = false
+local dragStartPos = nil
+local btnStartPos = nil
+
+floatBtn.InputBegan:Connect(function(inp)
+    if inp.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragOn = true
+        dragStartPos = inp.Position
+        btnStartPos = floatBtn.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(inp)
+    if dragOn and inp.UserInputType == Enum.UserInputType.MouseMovement then
+        local d = inp.Position - dragStartPos
+        local nx = math.clamp(btnStartPos.X.Offset + d.X, 0, 1800)
+        local ny = math.clamp(btnStartPos.Y.Offset + d.Y, 0, 1000)
+        floatBtn.Position = UDim2.new(0, nx, 0, ny)
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(inp)
+    if inp.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragOn = false
+    end
+end)
+
+--==============================================
+-- ОКНО АКТИВАЦИИ
+--==============================================
+local actFrame = Instance.new("Frame")
+actFrame.Parent = gui
+actFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 25)
+actFrame.BackgroundTransparency = 0.05
+actFrame.Size = UDim2.new(0, 300, 0, 210)
+actFrame.Position = UDim2.new(0.5, -150, 0.5, -105)
+actFrame.Visible = false
+actFrame.Active = true
+actFrame.Draggable = true
+actFrame.BorderSizePixel = 0
+
+local ac = Instance.new("UICorner")
+ac.CornerRadius = UDim.new(0, 10)
+ac.Parent = actFrame
+
+local ast = Instance.new("UIStroke")
+ast.Color = Color3.fromRGB(200, 50, 50)
+ast.Thickness = 1.5
+ast.Transparency = 0.4
+ast.Parent = actFrame
+
+-- Заголовок
+local actTitle = Instance.new("TextLabel")
+actTitle.Parent = actFrame
+actTitle.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
+actTitle.Size = UDim2.new(1, 0, 0, 32)
+actTitle.Font = Enum.Font.GothamBold
+actTitle.Text = "АКТИВАЦИЯ"
+actTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+actTitle.TextSize = 14
+
+-- Поле ввода
+local codeBox = Instance.new("TextBox")
+codeBox.Parent = actFrame
+codeBox.BackgroundColor3 = Color3.fromRGB(32, 32, 42)
+codeBox.Size = UDim2.new(0.8, 0, 0, 34)
+codeBox.Position = UDim2.new(0.1, 0, 0.28, 0)
+codeBox.Font = Enum.Font.Gotham
+codeBox.PlaceholderText = "Код активации..."
+codeBox.PlaceholderColor3 = Color3.fromRGB(140, 140, 140)
+codeBox.Text = ""
+codeBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+codeBox.TextSize = 14
+codeBox.BorderSizePixel = 0
+
+local cc = Instance.new("UICorner")
+cc.CornerRadius = UDim.new(0, 5)
+cc.Parent = codeBox-- Ошибка
+local errText = Instance.new("TextLabel")
+errText.Parent = actFrame
+errText.BackgroundTransparency = 1
+errText.Size = UDim2.new(0.8, 0, 0, 18)
+errText.Position = UDim2.new(0.1, 0, 0.5, 0)
+errText.Font = Enum.Font.Gotham
+errText.Text = ""
+errText.TextColor3 = Color3.fromRGB(255, 90, 90)
+errText.TextSize = 11
+
+-- Кнопка
+local actBtn = Instance.new("TextButton")
+actBtn.Parent = actFrame
+actBtn.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
+actBtn.Size = UDim2.new(0.5, 0, 0, 34)
+actBtn.Position = UDim2.new(0.25, 0, 0.65, 0)
+actBtn.Font = Enum.Font.GothamBold
+actBtn.Text = "АКТИВИРОВАТЬ"
+actBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+actBtn.TextSize = 13
+actBtn.BorderSizePixel = 0
+actBtn.AutoButtonColor = false
+
+local ac2 = Instance.new("UICorner")
+ac2.CornerRadius = UDim.new(0, 5)
+ac2.Parent = actBtn
+
+-- Обработка активации
+actBtn.MouseButton1Click:Connect(function()
+    local code = codeBox.Text
     
-    local SelectFrame = Instance.new("Frame")
-    SelectFrame.Name = "SelectFrame"
-    SelectFrame.Parent = SelectGui
-    SelectFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-    SelectFrame.BorderSizePixel = 0
-    SelectFrame.Size = UDim2.new(0, 300, 0, 200)
-    SelectFrame.Position = UDim2.new(0.5, -150, 0.5, -100)
-    SelectFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-    SelectFrame.Active = true
-    SelectFrame.Draggable = true
+    if code == "" then
+        errText.Text = "Введите код!"
+        return
+    end
     
-    -- Скругление
-    local Corner = Instance.new("UICorner")
-    Corner.CornerRadius = UDim.new(0, 12)
-    Corner.Parent = SelectFrame
+    if code == ACTIVATION_CODE then
+        errText.Text = ""
+        DoActivate()
+        
+        actBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+        actBtn.Text = "ГОТОВО!"
+        
+        task.wait(0.8)
+        actFrame.Visible = false
+        floatBtn.Visible = false
+        
+        -- Загрузка
+        ShowLoading()
+    else
+        errText.Text = "Неверный код!"
+        
+        local op = actFrame.Position
+        for i = 1, 4 do
+            actFrame.Position = UDim2.new(0.5, -150 + math.random(-4, 4), 0.5, -105 + math.random(-3, 3))
+            task.wait(0.04)
+        end
+        actFrame.Position = op
+    end
+end)
+
+--==============================================
+-- ЭКРАН ЗАГРУЗКИ
+--==============================================
+local loadFrame = Instance.new("Frame")
+loadFrame.Parent = gui
+loadFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
+loadFrame.BackgroundTransparency = 0.08
+loadFrame.Size = UDim2.new(0, 320, 0, 110)
+loadFrame.Position = UDim2.new(0.5, -160, 0.5, -55)
+loadFrame.Visible = false
+loadFrame.Active = true
+loadFrame.Draggable = true
+loadFrame.BorderSizePixel = 0
+
+local lc = Instance.new("UICorner")
+lc.CornerRadius = UDim.new(0, 8)
+lc.Parent = loadFrame
+
+local lst = Instance.new("UIStroke")
+lst.Color = Color3.fromRGB(200, 40, 40)
+lst.Thickness = 1.5
+lst.Transparency = 0.4
+lst.Parent = loadFrame
+
+local loadTitle = Instance.new("TextLabel")
+loadTitle.Parent = loadFrame
+loadTitle.BackgroundTransparency = 1
+loadTitle.Size = UDim2.new(1, 0, 0, 28)
+loadTitle.Position = UDim2.new(0, 0, 0.08, 0)
+loadTitle.Font = Enum.Font.GothamBold
+loadTitle.Text = "ЗАГРУЗКА..."
+loadTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+loadTitle.TextSize = 15
+
+-- Прогресс-бар
+local barBg = Instance.new("Frame")
+barBg.Parent = loadFrame
+barBg.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+barBg.Size = UDim2.new(0.8, 0, 0, 6)
+barBg.Position = UDim2.new(0.1, 0, 0.45, 0)
+barBg.BorderSizePixel = 0
+
+local bc = Instance.new("UICorner")
+bc.CornerRadius = UDim.new(0, 3)
+bc.Parent = barBg
+
+local barFill = Instance.new("Frame")
+barFill.Parent = barBg
+barFill.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
+barFill.Size = UDim2.new(0, 0, 1, 0)
+barFill.BorderSizePixel = 0
+
+local bfc = Instance.new("UICorner")
+bfc.CornerRadius = UDim.new(0, 3)
+bfc.Parent = barFill
+
+local percText = Instance.new("TextLabel")
+percText.Parent = loadFrame
+percText.BackgroundTransparency = 1
+percText.Size = UDim2.new(1, 0, 0, 18)
+percText.Position = UDim2.new(0, 0, 0.6, 0)
+percText.Font = Enum.Font.Gotham
+percText.Text = "0%"
+percText.TextColor3 = Color3.fromRGB(180, 180, 180)
+percText.TextSize = 11
+
+function ShowLoading()
+    loadFrame.Visible = true
     
-    -- Обводка
-    local Stroke = Instance.new("UIStroke")
-    Stroke.Color = Color3.fromRGB(100, 50, 255)
-    Stroke.Thickness = 2
-    Stroke.Transparency = 0.5
-    Stroke.Parent = SelectFrame
+    local dur = math.random(4, 10)
+    local st = tick()
     
-    -- Заголовок
-    local Title = Instance.new("TextLabel")
-    Title.Parent = SelectFrame
-    Title.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-    Title.Size = UDim2.new(1, 0, 0, 40)
-    Title.Font = Enum.Font.GothamBold
-    Title.Text = "📱 ВЫБЕРИТЕ УСТРОЙСТВО"
-    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Title.TextSize = 16
-    
-    -- Иконка ПК
-    local PCButton = Instance.new("TextButton")
-    PCButton.Parent = SelectFrame
-    PCButton.BackgroundColor3 = Color3.fromRGB(100, 50, 255)
-    PCButton.Size = UDim2.new(0.4, 0, 0, 80)
-    PCButton.Position = UDim2.new(0.07, 0, 0.35, 0)
-    PCButton.Font = Enum.Font.GothamBold
-    PCButton.Text = "🖥️\nПК"
-    PCButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    PCButton.TextSize = 20
-    PCButton.AutoButtonColor = false
-    
-    local PCCorner = Instance.new("UICorner")
-    PCCorner.CornerRadius = UDim.new(0, 10)
-    PCCorner.Parent = PCButton
-    
-    -- Иконка Телефона
-    local PhoneButton = Instance.new("TextButton")
-    PhoneButton.Parent = SelectFrame
-    PhoneButton.BackgroundColor3 = Color3.fromRGB(50, 200, 100)
-    PhoneButton.Size = UDim2.new(0.4, 0, 0, 80)
-    PhoneButton.Position = UDim2.new(0.53, 0, 0.35, 0)
-    PhoneButton.Font = Enum.Font.GothamBold
-    PhoneButton.Text = "📱\nТелефон"
-    PhoneButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    PhoneButton.TextSize = 20
-    PhoneButton.AutoButtonColor = false
-    
-    local PhoneCorner = Instance.new("UICorner")
-    PhoneCorner.CornerRadius = UDim.new(0, 10)
-    PhoneCorner.Parent = PhoneButton-- Подсказка
-    local Hint = Instance.new("TextLabel")
-    Hint.Parent = SelectFrame
-    Hint.BackgroundTransparency = 1
-    Hint.Size = UDim2.new(1, 0, 0, 20)
-    Hint.Position = UDim2.new(0, 0, 0.85, 0)
-    Hint.Font = Enum.Font.Gotham
-    Hint.Text = "Выбор сохранится автоматически"
-    Hint.TextColor3 = Color3.fromRGB(150, 150, 150)
-    Hint.TextSize = 11
-    
-    -- Выбор ПК
-    PCButton.MouseButton1Click:Connect(function()
-        DeviceType = "PC"
-        pcall(function() writefile(deviceFile, "PC") end)
-        SelectGui:Destroy()
-        StartCheat()
+    task.spawn(function()
+        while tick() - st < dur dolocal p = (tick() - st) / dur
+            barFill.Size = UDim2.new(p, 0, 1, 0)
+            percText.Text = math.floor(p * 100) .. "%"
+            task.wait(0.05)
+        end
+        
+        barFill.Size = UDim2.new(1, 0, 1, 0)
+        percText.Text = "100%"
+        loadTitle.Text = "ГОТОВО!"
+        
+        task.wait(0.5)
+        loadFrame.Visible = false
+        
+        -- Открываем меню
+        mainMenu.Visible = true
+        menuOpen = true
     end)
-    
-    -- Выбор Телефона
-    PhoneButton.MouseButton1Click:Connect(function()
-        DeviceType = "Mobile"
-        pcall(function() writefile(deviceFile, "Mobile") end)
-        SelectGui:Destroy()
-        StartCheat()
-    end)
-    
-    -- Анимация появления кнопок
-    PCButton.Position = UDim2.new(0.07, -100, 0.35, 0)
-    PhoneButton.Position = UDim2.new(0.53, 100, 0.35, 0)
-    
-    local tween1 = TweenService:Create(PCButton, TweenInfo.new(0.5, Enum.EasingStyle.Back), {Position = UDim2.new(0.07, 0, 0.35, 0)})
-    local tween2 = TweenService:Create(PhoneButton, TweenInfo.new(0.5, Enum.EasingStyle.Back), {Position = UDim2.new(0.53, 0, 0.35, 0)})
-    tween1:Play()
-    tween2:Play()
-    
-    -- Ждём выбора
-    repeat task.wait() until DeviceType ~= nil
 end
 
 --==============================================
--- НАСТРОЙКИ GUI В ЗАВИСИМОСТИ ОТ УСТРОЙСТВА
+-- ГЛАВНОЕ МЕНЮ
 --==============================================
-local GUISettings = {
-    PC = {
-        MainSize = UDim2.new(0, 300, 0, 520),
-        MainPos = UDim2.new(0.01, 0, 0.08, 0),
-        FontSize = 14,
-        ButtonHeight = 32,
-        TitleSize = 18,
-        TabSize = 32,
-        ToggleWidth = 0.85,
-        CornerRadius = 12,
-        StrokeThickness = 2,
-        AnimationSpeed = 0.4
-    },
-    Mobile = {
-        MainSize = UDim2.new(0, 220, 0, 400),
-        MainPos = UDim2.new(0.01, 0, 0.05, 0),
-        FontSize = 11,
-        ButtonHeight = 26,
-        TitleSize = 14,
-        TabSize = 26,
-        ToggleWidth = 0.88,
-        CornerRadius = 8,
-        StrokeThickness = 1.5,
-        AnimationSpeed = 0.3
-    }
-}
+local mainMenu = Instance.new("Frame")
+mainMenu.Parent = gui
+mainMenu.BackgroundColor3 = Color3.fromRGB(18, 18, 25)
+mainMenu.BackgroundTransparency = 0.05
+mainMenu.Size = UDim2.new(0, 250, 0, 340)
+mainMenu.Position = UDim2.new(0.05, 0, 0.18, 0)
+mainMenu.Visible = false
+mainMenu.Active = true
+mainMenu.Draggable = true
+mainMenu.BorderSizePixel = 0
+
+if alreadyActivated then
+    mainMenu.Visible = true
+    menuOpen = true
+end
+
+local mc = Instance.new("UICorner")
+mc.CornerRadius = UDim.new(0, 8)
+mc.Parent = mainMenu
+
+local mst = Instance.new("UIStroke")
+mst.Color = Color3.fromRGB(200, 40, 40)
+mst.Thickness = 1.5
+mst.Transparency = 0.4
+mst.Parent = mainMenu
+
+-- Заголовок
+local menuTitle = Instance.new("TextLabel")
+menuTitle.Parent = mainMenu
+menuTitle.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
+menuTitle.Size = UDim2.new(1, 0, 0, 28)
+menuTitle.Font = Enum.Font.GothamBold
+menuTitle.Text = "HENO CHEAT"
+menuTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+menuTitle.TextSize = 14
+
+-- Кнопка закрытия меню
+local closeMenu = Instance.new("TextButton")
+closeMenu.Parent = menuTitle
+closeMenu.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
+closeMenu.BackgroundTransparency = 0.3
+closeMenu.Size = UDim2.new(0, 24, 0, 24)
+closeMenu.Position = UDim2.new(0.88, 0, 0.07, 0)
+closeMenu.Font = Enum.Font.GothamBold
+closeMenu.Text = "X"
+closeMenu.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeMenu.TextSize = 13
+closeMenu.BorderSizePixel = 0
+
+local clc = Instance.new("UICorner")
+clc.CornerRadius = UDim.new(0, 4)
+clc.Parent = closeMenu
+
+closeMenu.MouseButton1Click:Connect(function()
+    mainMenu.Visible = false
+    menuOpen = false
+end)
+
+-- Функция создания переключателя
+local function MakeToggle(parent, label, yPos, callback)
+    local box = Instance.new("Frame")
+    box.Parent = parent
+    box.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+    box.Size = UDim2.new(0.84, 0, 0, 30)
+    box.Position = UDim2.new(0.08, 0, yPos, 0)
+    box.BorderSizePixel = 0
+    
+    local bc2 = Instance.new("UICorner")
+    bc2.CornerRadius = UDim.new(0, 4)
+    bc2.Parent = box
+    
+    local txt = Instance.new("TextLabel")
+    txt.Parent = box
+    txt.BackgroundTransparency = 1
+    txt.Size = UDim2.new(0.6, 0, 1, 0)
+    txt.Position = UDim2.new(0.05, 0, 0, 0)
+    txt.Font = Enum.Font.Gotham
+    txt.Text = label
+    txt.TextColor3 = Color3.fromRGB(255, 255, 255)
+    txt.TextSize = 12
+    txt.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local btn = Instance.new("TextButton")
+    btn.Parent = box
+    btn.BackgroundColor3 = Color3.fromRGB(200, 45, 45)
+    btn.Size = UDim2.new(0.28, 0, 0.7, 0)
+    btn.Position = UDim2.new(0.68, 0, 0.15, 0)
+    btn.Font = Enum.Font.GothamBold
+    btn.Text = "OFF"
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 10
+    btn.BorderSizePixel = 0
+    btn.AutoButtonColor = false
+    
+    local bc3 = Instance.new("UICorner")
+    bc3.CornerRadius = UDim.new(0, 3)
+    bc3.Parent = btn
+    
+    local on = false
+    
+    btn.MouseButton1Click:Connect(function()
+        on = not on
+        if on then
+            btn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+            btn.Text = "ON"
+        else
+            btn.BackgroundColor3 = Color3.fromRGB(200, 45, 45)
+            btn.Text = "OFF"
+        end
+        if callback then callback(on) end
+    end)
+    
+    return btn
+end-- Функция создания кнопки
+local function MakeButton(parent, label, yPos, cb)
+    local btn = Instance.new("TextButton")
+    btn.Parent = parent
+    btn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+    btn.Size = UDim2.new(0.84, 0, 0, 30)
+    btn.Position = UDim2.new(0.08, 0, yPos, 0)
+    btn.Font = Enum.Font.Gotham
+    btn.Text = label
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 12
+    btn.BorderSizePixel = 0
+    btn.AutoButtonColor = false
+    
+    local bc4 = Instance.new("UICorner")
+    bc4.CornerRadius = UDim.new(0, 4)
+    bc4.Parent = btn
+    
+    btn.MouseEnter:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(200, 40, 40)}):Play()
+    end)
+    btn.MouseLeave:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(35, 35, 45)}):Play()
+    end)
+    
+    if cb then btn.MouseButton1Click:Connect(cb) end
+    return btn
+end
+
+-- Кнопки меню
+MakeToggle(mainMenu, "Aimbot", 0.13, function(s) aimbotOn = s end)
+MakeButton(mainMenu, "Key: E", 0.26, function()
+    -- Смена клавиши
+    if aimKey == Enum.KeyCode.E then aimKey = Enum.KeyCode.Q
+    elseif aimKey == Enum.KeyCode.Q then aimKey = Enum.KeyCode.F
+    else aimKey = Enum.KeyCode.E end
+end)
+
+MakeToggle(mainMenu, "TriggerBot", 0.39, function(s) triggerOn = s end)
+MakeToggle(mainMenu, "ESP", 0.52, function(s) espOn = s end)
+MakeToggle(mainMenu, "SpeedHack", 0.65, function(s)
+    speedOn = s
+    local c = LocalPlayer.Character
+    if c and c:FindFirstChild("Humanoid") then
+        c.Humanoid.WalkSpeed = s and (normalSpeed * speedX) or normalSpeed
+    end
+end)
+
+MakeButton(mainMenu, "Speed: 2x", 0.78, function()
+    speedX = speedX + 1
+    if speedX > 5 then speedX = 1 end
+    if speedOn then
+        local c = LocalPlayer.Character
+        if c and c:FindFirstChild("Humanoid") then
+            c.Humanoid.WalkSpeed = normalSpeed * speedX
+        end
+    end
+end)
 
 --==============================================
--- ЗАПУСК ОСНОВНОГО ЧИТА
+-- ОТКРЫТИЕ МЕНЮ ПО КНОПКЕ
 --==============================================
-function StartCheat()
-    local GUI = GUISettings[DeviceType]
+floatBtn.MouseButton1Click:Connect(function()
+    if dragOn then return end
     
-    --==============================================
-    -- АНТИ-БАН
-    --==============================================
-    pcall(function()
-        local mt = getrawmetatable(game)
-        local oldNamecall = mt.__namecall
-        setreadonly(mt, false)
-        
-        mt.__namecall = newcclosure(function(self, ...)
-            local method = getnamecallmethod()
-            local args = {...}
-            
-            if method == "FindFirstChild" and type(args[1]) == "string" then
-                if args[1]:find("Nebula") or args[1]:find("ESP") then
-                    return nil
-                end
-            end
-            
-            return oldNamecall(self, ...)
-        end)
-        
-        setreadonly(mt, true)
-    end)
-    
-    --==============================================
-    -- АНТИ-КИК
-    --==============================================
-    local oldKick = LocalPlayer.Kick
-    LocalPlayer.Kick = function(self, reason)
-        local blocked = {"Kick", "Ban", "Exploit", "Hack", "Cheat", "Detect"}
-        if reason then
-            for _, word in ipairs(blocked) do
-                if reason:lower():find(word:lower()) then
-                    warn("[Anti-Kick] Заблокирован: " .. reason)
-                    return
-                end
-            end
-        end
-        return oldKick(self, reason)
+    if not Activated then
+        -- Показываем активацию
+        actFrame.Visible = true
+        codeBox.Text = ""
+        errText.Text = ""
+    else
+        -- Открываем/закрываем меню
+        mainMenu.Visible = not mainMenu.Visible
+        menuOpen = mainMenu.Visible
     end
+end)
+
+--==============================================
+-- ФУНКЦИИ ЧИТА
+--==============================================
+
+-- Аимбот
+RunService.RenderStepped:Connect(function()
+    if not Activated then return end
+    if not aimbotOn then return end
+    if not UserInputService:IsKeyDown(aimKey) then return end
     
-    --==============================================
-    -- АНТИ-АФК
-    --==============================================LocalPlayer.Idled:Connect(function()
-        VirtualUser:CaptureController()
-        VirtualUser:ClickButton2(Vector2.new())
-    end)
+    local best = nil
+    local bestDist = 99999
     
-    --==============================================
-    -- ПЕРЕМЕННЫЕ
-    --==============================================
-    local aimbotEnabled = false
-    local triggerEnabled = false
-    local espEnabled = false
-    local skinEnabled = false
-    local speedEnabled = false
-    local currentTheme = "Default"
-    local aimKey = Enum.KeyCode.E
-    local speedMultiplier = 2
-    local defaultWalkSpeed = 16
-    local espObjects = {}
-    
-    -- Темы
-    local Themes = {
-        Default = {
-            Primary = Color3.fromRGB(100, 50, 255),
-            Secondary = Color3.fromRGB(25, 25, 35),
-            Accent = Color3.fromRGB(50, 200, 50),
-            Danger = Color3.fromRGB(255, 60, 60),
-            Text = Color3.fromRGB(255, 255, 255),
-            Name = "По умолчанию"
-        },
-        Neon = {
-            Primary = Color3.fromRGB(0, 255, 128),
-            Secondary = Color3.fromRGB(15, 15, 25),
-            Accent = Color3.fromRGB(255, 0, 255),
-            Danger = Color3.fromRGB(255, 100, 0),
-            Text = Color3.fromRGB(0, 255, 255),
-            Name = "Неон"
-        },
-        Midnight = {
-            Primary = Color3.fromRGB(50, 50, 100),
-            Secondary = Color3.fromRGB(15, 15, 30),
-            Accent = Color3.fromRGB(100, 100, 255),
-            Danger = Color3.fromRGB(200, 50, 50),
-            Text = Color3.fromRGB(200, 200, 255),
-            Name = "Полночь"
-        },
-        Crimson = {
-            Primary = Color3.fromRGB(200, 50, 50),
-            Secondary = Color3.fromRGB(25, 10, 10),
-            Accent = Color3.fromRGB(255, 100, 100),
-            Danger = Color3.fromRGB(255, 0, 0),
-            Text = Color3.fromRGB(255, 200, 200),
-            Name = "Багровый"
-        },
-        Ocean = {
-            Primary = Color3.fromRGB(0, 150, 200),
-            Secondary = Color3.fromRGB(10, 20, 30),
-            Accent = Color3.fromRGB(0, 200, 150),
-            Danger = Color3.fromRGB(200, 100, 0),
-            Text = Color3.fromRGB(200, 230, 255),
-            Name = "Океан"
-        }
-    }
-    
-    local theme = Themes[currentTheme]
-    
-    --==============================================
-    -- ESP СИСТЕМА
-    --==============================================
-    local function CreateESP(player)
-        local esp = {}
-        
-        -- Бокс
-        esp.Box = Drawing.new("Square")
-        esp.Box.Visible = false
-        esp.Box.Color = Color3.fromRGB(255, 255, 255)
-        esp.Box.Thickness = 1.5
-        esp.Box.Filled = false
-        
-        -- Трассер
-        esp.Tracer = Drawing.new("Line")
-        esp.Tracer.Visible = false
-        esp.Tracer.Color = Color3.fromRGB(255, 255, 255)
-        esp.Tracer.Thickness = 1
-        
-        -- ХП бар (фон)
-        esp.HealthBg = Drawing.new("Line")
-        esp.HealthBg.Visible = false
-        esp.HealthBg.Color = Color3.fromRGB(30, 30, 30)
-        esp.HealthBg.Thickness = 3
-        
-        -- ХП бар (заполнение)
-        esp.HealthBar = Drawing.new("Line")
-        esp.HealthBar.Visible = false
-        esp.HealthBar.Color = Color3.fromRGB(0, 255, 0)
-        esp.HealthBar.Thickness = 1.5
-        
-        -- Имя
-        esp.NameTag = Drawing.new("Text")
-        esp.NameTag.Visible = false
-        esp.NameTag.Color = Color3.fromRGB(255, 255, 255)
-        esp.NameTag.Size = DeviceType == "Mobile" and 13 or 16
-        esp.NameTag.Center = true
-        
-        -- Дистанция
-        esp.Distance = Drawing.new("Text")
-        esp.Distance.Visible = false
-        esp.Distance.Color = Color3.fromRGB(200, 200, 200)
-        esp.Distance.Size = DeviceType == "Mobile" and 11 or 13
-        esp.Distance.Center = true
-        
-        return espend
-    
-    local function UpdateESP()
-        if not espEnabled then
-            for _, esp in pairs(espObjects) do
-                for _, drawing in pairs(esp) do
-                    if drawing and drawing.Remove then
-                        drawing.Visible = false
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr == LocalPlayer then continue end
+        local c = plr.Character
+        if c then
+            local head = c:FindFirstChild("Head")
+            local hum = c:FindFirstChild("Humanoid")
+            if head and hum and hum.Health > 0 then
+                local sp, onScr = Camera:WorldToViewportPoint(head.Position)
+                if onScr then
+                    local mid = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+                    local d = (Vector2.new(sp.X, sp.Y) - mid).Magnitude
+                    if d < bestDist then
+                        bestDist = d
+                        best = head
                     end
                 end
-            end
-            return
-        end
-        
-        for _, player in ipairs(Players:GetPlayers()) do
-            if player == LocalPlayer then continue end
-            
-            local char = player.Character
-            if not char or not char:FindFirstChild("Head") or not char:FindFirstChild("Humanoid") then
-                if espObjects[player] then
-                    for _, drawing in pairs(espObjects[player]) do
-                        if drawing and drawing.Remove then
-                            drawing:Remove()
-                        end
-                    end
-                    espObjects[player] = nil
-                end
-                continue
-            end
-            
-            local humanoid = char:FindFirstChild("Humanoid")
-            if humanoid.Health <= 0 then
-                if espObjects[player] then
-                    for _, drawing in pairs(espObjects[player]) do
-                        if drawing and drawing.Remove then
-                            drawing.Visible = false
-                        end
-                    end
-                end
-                continue
-            end
-            
-            if not espObjects[player] then
-                espObjects[player] = CreateESP(player)
-            end
-            
-            local esp = espObjects[player]
-            local head = char.Head
-            local root = char:FindFirstChild("HumanoidRootPart")
-            
-            if not head or not root then continue end
-            
-            local headPos, headOnScreen = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
-            local rootPos, rootOnScreen = Camera:WorldToViewportPoint(root.Position - Vector3.new(0, 3, 0))
-            
-            if not headOnScreen and not rootOnScreen then
-                for _, drawing in pairs(esp) do
-                    if drawing and drawing.Remove then
-                        drawing.Visible = false
-                    end
-                end
-                continue
-            end
-            
-            -- Расчёт размера бокса
-            local distance = (Camera.CFrame.Position - root.Position).Magnitude
-            local boxHeight = 2000 / distance
-            local boxWidth = boxHeight * 0.65
-            
-            local boxTop = Vector2.new(headPos.X - boxWidth/2, headPos.Y - boxHeight/2)
-            local boxBottom = Vector2.new(headPos.X + boxWidth/2, headPos.Y + boxHeight/2)
-            
-            -- Бокс
-            if esp.Box then
-                esp.Box.Visible = headOnScreen
-                esp.Box.Position = boxTop
-                esp.Box.Size = Vector2.new(boxWidth, boxHeight)
-                esp.Box.Color = theme.Primary
-            end
-            
-            -- Трассер
-            if esp.Tracer then
-                esp.Tracer.Visible = true
-                esp.Tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
-                esp.Tracer.To = Vector2.new(rootPos.X, rootPos.Y)
-                
-                -- Цвет трассера по ХП
-                local healthPercent = humanoid.Health / humanoid.MaxHealth
-                esp.Tracer.Color = Color3.fromRGB(
-                    255 * (1 - healthPercent),
-                    255 * healthPercent,
-                    0
-                )
-            end
-            
-            -- ХП бар
-            if esp.HealthBar and esp.HealthBg then
-                local barX = boxTop.X - 6
-                local barTop = boxTop.Ylocal barBottom = boxBottom.Y
-                local healthPercent = humanoid.Health / humanoid.MaxHealth
-                local healthY = barTop + (barBottom - barTop) * (1 - healthPercent)
-                
-                esp.HealthBg.Visible = headOnScreen
-                esp.HealthBg.From = Vector2.new(barX, barTop)
-                esp.HealthBg.To = Vector2.new(barX, barBottom)
-                
-                esp.HealthBar.Visible = headOnScreen
-                esp.HealthBar.From = Vector2.new(barX, healthY)
-                esp.HealthBar.To = Vector2.new(barX, barBottom)
-                esp.HealthBar.Color = Color3.fromRGB(
-                    255 * (1 - healthPercent),
-                    255 * healthPercent,
-                    0
-                )
-            end
-            
-            -- Имя
-            if esp.NameTag then
-                esp.NameTag.Visible = headOnScreen
-                esp.NameTag.Position = Vector2.new(headPos.X, boxTop.Y - 18)
-                esp.NameTag.Text = player.Name
-                esp.NameTag.Color = theme.Text
-            end
-            
-            -- Дистанция
-            if esp.Distance then
-                esp.Distance.Visible = headOnScreen
-                esp.Distance.Position = Vector2.new(headPos.X, boxBottom.Y + 4)
-                esp.Distance.Text = math.floor(distance) .. "m"
             end
         end
     end
     
-    -- Очистка ESP при выходе игрока
-    Players.PlayerRemoving:Connect(function(player)
-        if espObjects[player] then
-            for _, drawing in pairs(espObjects[player]) do
-                if drawing and drawing.Remove then
-                    drawing:Remove()
-                end
+    if best then
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, best.Position)
+    end
+end)
+
+-- Триггербот
+UserInputService.InputBegan:Connect(function(inp)
+    if not Activated then return endif not triggerOn then return end
+    if inp.UserInputType == Enum.UserInputType.MouseButton2 then
+        local m = LocalPlayer:GetMouse()
+        if m.Target and m.Target.Parent then
+            local h = m.Target.Parent:FindFirstChild("Humanoid")
+            if h and h.Health > 0 then
+                mouse1press()
+                task.wait(0.04)
+                mouse1release()
             end
-            espObjects[player] = nil
         end
-    end)
+    end
+end)
+
+-- ESP
+local function MakeESP(plr)
+    local e = {}
     
-    --==============================================
-    -- СОЗДАНИЕ GUI
-    --==============================================
-    local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "NebulaCheat_" .. math.random(10000, 99999)
-    ScreenGui.Parent = game:GetService("CoreGui")
-    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    ScreenGui.ResetOnSpawn = false
-    
-    local MainFrame = Instance.new("Frame")
-    MainFrame.Name = "MainFrame"
-    MainFrame.Parent = ScreenGui
-    MainFrame.BackgroundColor3 = theme.Secondary
-    MainFrame.BackgroundTransparency = 0.15
-    MainFrame.BorderSizePixel = 0
-    MainFrame.Size = GUI.MainSize
-    MainFrame.Position = UDim2.new(0.01, -GUI.MainSize.X.Offset, GUI.MainPos.Y.Scale, 0)
-    MainFrame.Active = true
-    MainFrame.Draggable = true
-    MainFrame.Visible = true
-    
-    -- Анимация появления
-    local goalPos = GUI.MainPos
-    local tween = TweenService:Create(MainFrame, TweenInfo.new(GUI.AnimationSpeed, Enum.EasingStyle.Back), {Position = goalPos})
-    tween:Play()
-    
-    -- Стилизация
-    local Corner = Instance.new("UICorner")
-    Corner.CornerRadius = UDim.new(0, GUI.CornerRadius)
-    Corner.Parent = MainFrame
-    
-    local Stroke = Instance.new("UIStroke")
-    Stroke.Color = theme.Primary
-    Stroke.Thickness = GUI.StrokeThickness
-    Stroke.Transparency = 0.5
-    Stroke.Parent = MainFrame
-    
-    -- Заголовок
-    local TitleBar = Instance.new("Frame")
-    TitleBar.Parent = MainFrame
-    TitleBar.BackgroundColor3 = theme.Primary
-    TitleBar.BackgroundTransparency = 0.3
-    TitleBar.Size = UDim2.new(1, 0, 0, GUI.TabSize)
-    
-    local TitleText = Instance.new("TextLabel")
-    TitleText.Parent = TitleBar
-    TitleText.BackgroundTransparency = 1
-    TitleText.Size = UDim2.new(0.75, 0, 1, 0)
-    TitleText.Position = UDim2.new(0.05, 0, 0, 0)
-    TitleText.Font = Enum.Font.GothamBold
-    TitleText.Text = "NEBULA V4.1"
-    TitleText.TextColor3 = theme.Text
-    TitleText.TextSize = GUI.TitleSize
-    TitleText.TextXAlignment = Enum.TextXAlignment.Left-- Кнопка закрытия
-    local CloseBtn = Instance.new("TextButton")
-    CloseBtn.Parent = TitleBar
-    CloseBtn.BackgroundColor3 = theme.Danger
-    CloseBtn.BackgroundTransparency = 0.5
-    CloseBtn.Size = UDim2.new(0, GUI.TabSize - 4, 0, GUI.TabSize - 4)
-    CloseBtn.Position = UDim2.new(0.88, 0, 0.07, 0)
-    CloseBtn.Font = Enum.Font.GothamBold
-    CloseBtn.Text = "×"
-    CloseBtn.TextColor3 = theme.Text
-    CloseBtn.TextSize = GUI.TitleSize
-    
-    local CloseCorner = Instance.new("UICorner")
-    CloseCorner.CornerRadius = UDim.new(0, 6)
-    CloseCorner.Parent = CloseBtn
-    
-    CloseBtn.MouseButton1Click:Connect(function()
-        MainFrame.Visible = not MainFrame.Visible
-    end)
-    
-    -- Вкладки
-    local Tabs = {
-        {Icon = "🎯", Name = "Aimbot"},
-        {Icon = "🔫", Name = "Trigger"},
-        {Icon = "👁️", Name = "ESP"},
-        {Icon = "🏃", Name = "Speed"},
-        {Icon = "🎨", Name = "Theme"},
+    e.box = Drawing.new("Square")
+    e.box.Visible = false
+    e.box.Color = Color3.fromRGB(2
