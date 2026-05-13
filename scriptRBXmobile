@@ -1,16 +1,7 @@
 --[[
-    HENO CHEAT - Исправленная версия
-    • Кнопка "ХЕНОЧИТ" для открытия меню
-    • Активация по коду: FREE_SLAKINKODUPDATE
-    • Таймер 12 часов (сохраняется)
-    • Прозрачный таймер слева внизу
-    • Все функции работают
+    HENO CHEAT - РАБОЧАЯ ВЕРСИЯ
+    Код активации: FREE_SLAKINKODUPDATE
 ]]
-
--- Ждём загрузки
-if not game:IsLoaded() then
-    game.Loaded:Wait()
-end
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -20,103 +11,77 @@ local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- Ждём персонажа
-if not LocalPlayer.Character then
-    LocalPlayer.CharacterAdded:Wait()
-end
-
 --==============================================
--- СИСТЕМА АКТИВАЦИИ
+-- АКТИВАЦИЯ
 --==============================================
-local ACTIVATION_CODE = "FREE_SLAKINKODUPDATE"
-local ACTIVATION_HOURS = 12
-local SAVE_FILE = "HenoCheat_Time.json"
+local CODE = "FREE_SLAKINKODUPDATE"
+local HOURS = 12
+local FILE = "HenoTime.json"
 
-local Activated = false
-local ExpiryTime = 0
-local RemainingSeconds = 0
+local activated = false
+local expiry = 0
+local remain = 0
 
--- Загрузка сохранения
-local function LoadTime()
-    local ok, data = pcall(function()
-        return readfile(SAVE_FILE)
-    end)
-    
-    if ok and data then
-        local tbl = HttpService:JSONDecode(data)
-        if tbl.expiry and os.time() < tbl.expiry then
-            Activated = true
-            ExpiryTime = tbl.expiry
-            RemainingSeconds = tbl.expiry - os.time()
-            return true
-        end
+-- Загрузка
+pcall(function()
+    local d = HttpService:JSONDecode(readfile(FILE))
+    if d.exp and os.time() < d.exp then
+        activated = true
+        expiry = d.exp
+        remain = d.exp - os.time()
     end
-    return false
-end
+end)
 
 -- Сохранение
-local function SaveTime()
-    local data = {expiry = ExpiryTime}
+local function save()
     pcall(function()
-        writefile(SAVE_FILE, HttpService:JSONEncode(data))
+        writefile(FILE, HttpService:JSONEncode({exp = expiry}))
     end)
 end
 
--- Активация
-local function DoActivate()
-    ExpiryTime = os.time() + (ACTIVATION_HOURS * 3600)
-    Activated = true
-    RemainingSeconds = ACTIVATION_HOURS * 3600
-    SaveTime()
+-- Активировать
+local function activate()
+    expiry = os.time() + HOURS * 3600
+    activated = true
+    remain = HOURS * 3600
+    save()
 end
 
 -- Формат времени
-local function FormatTime(sec)
-    local h = math.floor(sec / 3600)
-    local m = math.floor((sec % 3600) / 60)
-    local s = math.floor(sec % 60)
-    return string.format("%02d:%02d:%02d", h, m, s)
+local function fmt(s)
+    return string.format("%02d:%02d:%02d", s/3600, (s%3600)/60, s%60)
 end
-
--- Проверка при старте
-local alreadyActivated = LoadTime()
 
 --==============================================
 -- ПЕРЕМЕННЫЕ
 --==============================================
-local aimbotOn = false
-local espOn = false
-local speedOn = false
-local triggerOn = false
+local aimbot = false
+local esp = false
+local speed = false
+local trigger = false
 local aimKey = Enum.KeyCode.E
 local speedX = 2
-local normalSpeed = 16
 local espList = {}
-local menuOpen = false
 
 --==============================================
 -- GUI
 --==============================================
 local gui = Instance.new("ScreenGui")
-gui.Name = "HenoMain"
+gui.Name = "HenoGui"
 gui.Parent = game:GetService("CoreGui")
 gui.ResetOnSpawn = false
 
---==============================================
--- ТАЙМЕР (левый нижний угол)
---==============================================
+-- ТАЙМЕР (левый низ)
 local timerFrame = Instance.new("Frame")
 timerFrame.Parent = gui
 timerFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-timerFrame.BackgroundTransparency = 0.8
-timerFrame.Size = UDim2.new(0, 150, 0, 28)
-timerFrame.Position = UDim2.new(0, 8, 1, -38)
+timerFrame.BackgroundTransparency = 0.85
+timerFrame.Size = UDim2.new(0, 140, 0, 24)
+timerFrame.Position = UDim2.new(0, 5, 1, -34)
 timerFrame.Visible = false
 timerFrame.BorderSizePixel = 0
 
-local tc = Instance.new("UICorner")
-tc.CornerRadius = UDim.new(0, 5)
-tc.Parent = timerFrame
+Instance.new("UICorner", timerFrame).CornerRadius = UDim.new(0, 4)
 
 local timerText = Instance.new("TextLabel")
 timerText.Parent = timerFrame
@@ -125,31 +90,28 @@ timerText.Size = UDim2.new(1, 0, 1, 0)
 timerText.Font = Enum.Font.GothamBold
 timerText.Text = "12:00:00"
 timerText.TextColor3 = Color3.fromRGB(255, 180, 180)
-timerText.TextTransparency = 0.4
-timerText.TextSize = 13
+timerText.TextTransparency = 0.5
+timerText.TextSize = 12
 
 -- Обновление таймера
 task.spawn(function()
     while true do
-        if Activated then
+        if activated then
             timerFrame.Visible = true
-            local left = ExpiryTime - os.time()
-            RemainingSeconds = left
-            
-            if left <= 0 then
-                Activated = falseExpiryTime = 0
-                SaveTime()
+            remain = expiry - os.time()
+            if remain <= 0 then
+                activated = false
+                expiry = 0
+                save()
                 timerFrame.Visible = false
-                if mainMenu then mainMenu.Visible = false end
+                mainMenu.Visible = false
                 floatBtn.Visible = true
-                menuOpen = false
             else
-                timerText.Text = FormatTime(left)
-                
-                if left < 1800 then
-                    timerText.TextColor3 = Color3.fromRGB(255, 80, 80)
-                elseif left < 7200 then
-                    timerText.TextColor3 = Color3.fromRGB(255, 180, 80)
+                timerText.Text = fmt(remain)
+                if remain < 1800 then
+                    timerText.TextColor3 = Color3.fromRGB(255, 70, 70)
+                elseif remain < 7200 then
+                    timerText.TextColor3 = Color3.fromRGB(255, 170, 70)
                 else
                     timerText.TextColor3 = Color3.fromRGB(255, 180, 180)
                 end
@@ -161,221 +123,153 @@ task.spawn(function()
     end
 end)
 
---==============================================
--- ПЛАВАЮЩАЯ КНОПКА
---==============================================
+-- КНОПКА ХЕНОЧИТ
 local floatBtn = Instance.new("TextButton")
 floatBtn.Parent = gui
 floatBtn.BackgroundColor3 = Color3.fromRGB(200, 30, 30)
-floatBtn.BackgroundTransparency = 0.12
-floatBtn.Size = UDim2.new(0, 125, 0, 34)
-floatBtn.Position = UDim2.new(0.02, 0, 0.06, 0)
+floatBtn.Size = UDim2.new(0, 120, 0, 32)
+floatBtn.Position = UDim2.new(0.02, 0, 0.05, 0)
 floatBtn.Text = "ХЕНОЧИТ"
 floatBtn.Font = Enum.Font.GothamBold
 floatBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-floatBtn.TextSize = 15
+floatBtn.TextSize = 14
 floatBtn.BorderSizePixel = 0
 floatBtn.AutoButtonColor = false
 
-if alreadyActivated then
-    floatBtn.Visible = false
-end
+Instance.new("UICorner", floatBtn).CornerRadius = UDim.new(0, 6)
 
-local fc = Instance.new("UICorner")
-fc.CornerRadius = UDim.new(0, 7)
-fc.Parent = floatBtn
+if activated then floatBtn.Visible = false end
 
-local fs = Instance.new("UIStroke")
-fs.Color = Color3.fromRGB(255, 100, 100)
-fs.Thickness = 1.5
-fs.Transparency = 0.5
-fs.Parent = floatBtn
-
--- Перетаскивание кнопки
-local dragOn = false
-local dragStartPos = nil
-local btnStartPos = nil
-
-floatBtn.InputBegan:Connect(function(inp)
-    if inp.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragOn = true
-        dragStartPos = inp.Position
-        btnStartPos = floatBtn.Position
+-- Перетаскивание
+local drag = false
+local dragStart = nil
+local btnStart = nilfloatBtn.InputBegan:Connect(function(i)
+    if i.UserInputType == Enum.UserInputType.MouseButton1 then
+        drag = true
+        dragStart = i.Position
+        btnStart = floatBtn.Position
     end
 end)
 
-UserInputService.InputChanged:Connect(function(inp)
-    if dragOn and inp.UserInputType == Enum.UserInputType.MouseMovement then
-        local d = inp.Position - dragStartPos
-        local nx = math.clamp(btnStartPos.X.Offset + d.X, 0, 1800)
-        local ny = math.clamp(btnStartPos.Y.Offset + d.Y, 0, 1000)
-        floatBtn.Position = UDim2.new(0, nx, 0, ny)
+UserInputService.InputChanged:Connect(function(i)
+    if drag and i.UserInputType == Enum.UserInputType.MouseMovement then
+        local d = i.Position - dragStart
+        floatBtn.Position = UDim2.new(0, math.clamp(btnStart.X.Offset + d.X, 0, 1800), 0, math.clamp(btnStart.Y.Offset + d.Y, 0, 1000))
     end
 end)
 
-UserInputService.InputEnded:Connect(function(inp)
-    if inp.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragOn = false
-    end
+UserInputService.InputEnded:Connect(function(i)
+    if i.UserInputType == Enum.UserInputType.MouseButton1 then drag = false end
 end)
 
---==============================================
 -- ОКНО АКТИВАЦИИ
---==============================================
 local actFrame = Instance.new("Frame")
 actFrame.Parent = gui
-actFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 25)
-actFrame.BackgroundTransparency = 0.05
-actFrame.Size = UDim2.new(0, 300, 0, 210)
-actFrame.Position = UDim2.new(0.5, -150, 0.5, -105)
+actFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
+actFrame.Size = UDim2.new(0, 280, 0, 180)
+actFrame.Position = UDim2.new(0.5, -140, 0.5, -90)
 actFrame.Visible = false
 actFrame.Active = true
 actFrame.Draggable = true
 actFrame.BorderSizePixel = 0
 
-local ac = Instance.new("UICorner")
-ac.CornerRadius = UDim.new(0, 10)
-ac.Parent = actFrame
+Instance.new("UICorner", actFrame).CornerRadius = UDim.new(0, 8)
 
-local ast = Instance.new("UIStroke")
-ast.Color = Color3.fromRGB(200, 50, 50)
-ast.Thickness = 1.5
-ast.Transparency = 0.4
-ast.Parent = actFrame
-
--- Заголовок
 local actTitle = Instance.new("TextLabel")
 actTitle.Parent = actFrame
-actTitle.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
-actTitle.Size = UDim2.new(1, 0, 0, 32)
+actTitle.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
+actTitle.Size = UDim2.new(1, 0, 0, 28)
 actTitle.Font = Enum.Font.GothamBold
 actTitle.Text = "АКТИВАЦИЯ"
 actTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-actTitle.TextSize = 14
+actTitle.TextSize = 13
 
--- Поле ввода
 local codeBox = Instance.new("TextBox")
 codeBox.Parent = actFrame
-codeBox.BackgroundColor3 = Color3.fromRGB(32, 32, 42)
-codeBox.Size = UDim2.new(0.8, 0, 0, 34)
-codeBox.Position = UDim2.new(0.1, 0, 0.28, 0)
+codeBox.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+codeBox.Size = UDim2.new(0.8, 0, 0, 32)
+codeBox.Position = UDim2.new(0.1, 0, 0.3, 0)
 codeBox.Font = Enum.Font.Gotham
-codeBox.PlaceholderText = "Код активации..."
-codeBox.PlaceholderColor3 = Color3.fromRGB(140, 140, 140)
+codeBox.PlaceholderText = "Код..."
+codeBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
 codeBox.Text = ""
 codeBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-codeBox.TextSize = 14
+codeBox.TextSize = 13
 codeBox.BorderSizePixel = 0
 
-local cc = Instance.new("UICorner")
-cc.CornerRadius = UDim.new(0, 5)
-cc.Parent = codeBox-- Ошибка
-local errText = Instance.new("TextLabel")
-errText.Parent = actFrame
-errText.BackgroundTransparency = 1
-errText.Size = UDim2.new(0.8, 0, 0, 18)
-errText.Position = UDim2.new(0.1, 0, 0.5, 0)
-errText.Font = Enum.Font.Gotham
-errText.Text = ""
-errText.TextColor3 = Color3.fromRGB(255, 90, 90)
-errText.TextSize = 11
+Instance.new("UICorner", codeBox).CornerRadius = UDim.new(0, 4)
 
--- Кнопка
+local errLabel = Instance.new("TextLabel")
+errLabel.Parent = actFrame
+errLabel.BackgroundTransparency = 1
+errLabel.Size = UDim2.new(0.8, 0, 0, 16)
+errLabel.Position = UDim2.new(0.1, 0, 0.5, 0)
+errLabel.Font = Enum.Font.Gotham
+errLabel.Text = ""
+errLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+errLabel.TextSize = 10
+
 local actBtn = Instance.new("TextButton")
 actBtn.Parent = actFrame
 actBtn.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
-actBtn.Size = UDim2.new(0.5, 0, 0, 34)
+actBtn.Size = UDim2.new(0.5, 0, 0, 32)
 actBtn.Position = UDim2.new(0.25, 0, 0.65, 0)
 actBtn.Font = Enum.Font.GothamBold
 actBtn.Text = "АКТИВИРОВАТЬ"
 actBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-actBtn.TextSize = 13
+actBtn.TextSize = 12
 actBtn.BorderSizePixel = 0
 actBtn.AutoButtonColor = false
 
-local ac2 = Instance.new("UICorner")
-ac2.CornerRadius = UDim.new(0, 5)
-ac2.Parent = actBtn
+Instance.new("UICorner", actBtn).CornerRadius = UDim.new(0, 4)
 
--- Обработка активации
 actBtn.MouseButton1Click:Connect(function()
-    local code = codeBox.Text
-    
-    if code == "" then
-        errText.Text = "Введите код!"
+    if codeBox.Text == "" then
+        errLabel.Text = "Введи код!"
         return
     end
-    
-    if code == ACTIVATION_CODE then
-        errText.Text = ""
-        DoActivate()
-        
+    if codeBox.Text == CODE then
+        activate()
         actBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
         actBtn.Text = "ГОТОВО!"
-        
-        task.wait(0.8)
+        task.wait(0.6)
         actFrame.Visible = false
         floatBtn.Visible = false
-        
-        -- Загрузка
-        ShowLoading()
+        showLoad()
     else
-        errText.Text = "Неверный код!"
-        
-        local op = actFrame.Position
-        for i = 1, 4 do
-            actFrame.Position = UDim2.new(0.5, -150 + math.random(-4, 4), 0.5, -105 + math.random(-3, 3))
-            task.wait(0.04)
-        end
-        actFrame.Position = op
+        errLabel.Text = "Неверный код!"
     end
 end)
 
---==============================================
--- ЭКРАН ЗАГРУЗКИ
---==============================================
+-- ЗАГРУЗКА
 local loadFrame = Instance.new("Frame")
 loadFrame.Parent = gui
-loadFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
-loadFrame.BackgroundTransparency = 0.08
-loadFrame.Size = UDim2.new(0, 320, 0, 110)
-loadFrame.Position = UDim2.new(0.5, -160, 0.5, -55)
+loadFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+loadFrame.Size = UDim2.new(0, 300, 0, 90)
+loadFrame.Position = UDim2.new(0.5, -150, 0.5, -45)
 loadFrame.Visible = false
 loadFrame.Active = true
 loadFrame.Draggable = true
 loadFrame.BorderSizePixel = 0
 
-local lc = Instance.new("UICorner")
-lc.CornerRadius = UDim.new(0, 8)
-lc.Parent = loadFrame
-
-local lst = Instance.new("UIStroke")
-lst.Color = Color3.fromRGB(200, 40, 40)
-lst.Thickness = 1.5
-lst.Transparency = 0.4
-lst.Parent = loadFrame
+Instance.new("UICorner", loadFrame).CornerRadius = UDim.new(0, 8)
 
 local loadTitle = Instance.new("TextLabel")
 loadTitle.Parent = loadFrame
 loadTitle.BackgroundTransparency = 1
-loadTitle.Size = UDim2.new(1, 0, 0, 28)
-loadTitle.Position = UDim2.new(0, 0, 0.08, 0)
+loadTitle.Size = UDim2.new(1, 0, 0, 24)
+loadTitle.Position = UDim2.new(0, 0, 0.05, 0)
 loadTitle.Font = Enum.Font.GothamBold
 loadTitle.Text = "ЗАГРУЗКА..."
 loadTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-loadTitle.TextSize = 15
+loadTitle.TextSize = 13
 
--- Прогресс-бар
 local barBg = Instance.new("Frame")
 barBg.Parent = loadFrame
-barBg.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-barBg.Size = UDim2.new(0.8, 0, 0, 6)
+barBg.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+barBg.Size = UDim2.new(0.8, 0, 0, 5)
 barBg.Position = UDim2.new(0.1, 0, 0.45, 0)
-barBg.BorderSizePixel = 0
-
-local bc = Instance.new("UICorner")
-bc.CornerRadius = UDim.new(0, 3)
-bc.Parent = barBg
+barBg.BorderSizePixel = 0Instance.new("UICorner", barBg).CornerRadius = UDim.new(0, 3)
 
 local barFill = Instance.new("Frame")
 barFill.Parent = barBg
@@ -383,236 +277,173 @@ barFill.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
 barFill.Size = UDim2.new(0, 0, 1, 0)
 barFill.BorderSizePixel = 0
 
-local bfc = Instance.new("UICorner")
-bfc.CornerRadius = UDim.new(0, 3)
-bfc.Parent = barFill
+Instance.new("UICorner", barFill).CornerRadius = UDim.new(0, 3)
 
-local percText = Instance.new("TextLabel")
-percText.Parent = loadFrame
-percText.BackgroundTransparency = 1
-percText.Size = UDim2.new(1, 0, 0, 18)
-percText.Position = UDim2.new(0, 0, 0.6, 0)
-percText.Font = Enum.Font.Gotham
-percText.Text = "0%"
-percText.TextColor3 = Color3.fromRGB(180, 180, 180)
-percText.TextSize = 11
+local percLabel = Instance.new("TextLabel")
+percLabel.Parent = loadFrame
+percLabel.BackgroundTransparency = 1
+percLabel.Size = UDim2.new(1, 0, 0, 16)
+percLabel.Position = UDim2.new(0, 0, 0.6, 0)
+percLabel.Font = Enum.Font.Gotham
+percLabel.Text = "0%"
+percLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+percLabel.TextSize = 10
 
-function ShowLoading()
+function showLoad()
     loadFrame.Visible = true
-    
     local dur = math.random(4, 10)
     local st = tick()
     
     task.spawn(function()
-        while tick() - st < dur dolocal p = (tick() - st) / dur
+        while tick() - st < dur do
+            local p = (tick() - st) / dur
             barFill.Size = UDim2.new(p, 0, 1, 0)
-            percText.Text = math.floor(p * 100) .. "%"
-            task.wait(0.05)
+            percLabel.Text = math.floor(p * 100) .. "%"
+            task.wait(0.04)
         end
-        
         barFill.Size = UDim2.new(1, 0, 1, 0)
-        percText.Text = "100%"
+        percLabel.Text = "100%"
         loadTitle.Text = "ГОТОВО!"
-        
-        task.wait(0.5)
+        task.wait(0.4)
         loadFrame.Visible = false
-        
-        -- Открываем меню
         mainMenu.Visible = true
-        menuOpen = true
     end)
 end
 
---==============================================
 -- ГЛАВНОЕ МЕНЮ
---==============================================
 local mainMenu = Instance.new("Frame")
 mainMenu.Parent = gui
-mainMenu.BackgroundColor3 = Color3.fromRGB(18, 18, 25)
-mainMenu.BackgroundTransparency = 0.05
-mainMenu.Size = UDim2.new(0, 250, 0, 340)
+mainMenu.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
+mainMenu.Size = UDim2.new(0, 240, 0, 320)
 mainMenu.Position = UDim2.new(0.05, 0, 0.18, 0)
-mainMenu.Visible = false
+mainMenu.Visible = activated
 mainMenu.Active = true
 mainMenu.Draggable = true
 mainMenu.BorderSizePixel = 0
 
-if alreadyActivated then
-    mainMenu.Visible = true
-    menuOpen = true
-end
+Instance.new("UICorner", mainMenu).CornerRadius = UDim.new(0, 8)
 
-local mc = Instance.new("UICorner")
-mc.CornerRadius = UDim.new(0, 8)
-mc.Parent = mainMenu
-
-local mst = Instance.new("UIStroke")
-mst.Color = Color3.fromRGB(200, 40, 40)
-mst.Thickness = 1.5
-mst.Transparency = 0.4
-mst.Parent = mainMenu
-
--- Заголовок
 local menuTitle = Instance.new("TextLabel")
 menuTitle.Parent = mainMenu
-menuTitle.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
+menuTitle.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
 menuTitle.Size = UDim2.new(1, 0, 0, 28)
 menuTitle.Font = Enum.Font.GothamBold
 menuTitle.Text = "HENO CHEAT"
 menuTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-menuTitle.TextSize = 14
+menuTitle.TextSize = 13
 
--- Кнопка закрытия меню
-local closeMenu = Instance.new("TextButton")
-closeMenu.Parent = menuTitle
-closeMenu.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
-closeMenu.BackgroundTransparency = 0.3
-closeMenu.Size = UDim2.new(0, 24, 0, 24)
-closeMenu.Position = UDim2.new(0.88, 0, 0.07, 0)
-closeMenu.Font = Enum.Font.GothamBold
-closeMenu.Text = "X"
-closeMenu.TextColor3 = Color3.fromRGB(255, 255, 255)
-closeMenu.TextSize = 13
-closeMenu.BorderSizePixel = 0
+local closeBtn = Instance.new("TextButton")
+closeBtn.Parent = menuTitle
+closeBtn.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+closeBtn.BackgroundTransparency = 0.5
+closeBtn.Size = UDim2.new(0, 22, 0, 22)
+closeBtn.Position = UDim2.new(0.88, 0, 0.1, 0)
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.Text = "X"
+closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeBtn.TextSize = 12
+closeBtn.BorderSizePixel = 0
 
-local clc = Instance.new("UICorner")
-clc.CornerRadius = UDim.new(0, 4)
-clc.Parent = closeMenu
+Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 3)
 
-closeMenu.MouseButton1Click:Connect(function()
+closeBtn.MouseButton1Click:Connect(function()
     mainMenu.Visible = false
-    menuOpen = false
 end)
 
--- Функция создания переключателя
-local function MakeToggle(parent, label, yPos, callback)
+-- Функция переключателя
+local function addToggle(parent, text, y, cb)
     local box = Instance.new("Frame")
     box.Parent = parent
-    box.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-    box.Size = UDim2.new(0.84, 0, 0, 30)
-    box.Position = UDim2.new(0.08, 0, yPos, 0)
+    box.BackgroundColor3 = Color3.fromRGB(38, 38, 48)
+    box.Size = UDim2.new(0.84, 0, 0, 28)
+    box.Position = UDim2.new(0.08, 0, y, 0)
     box.BorderSizePixel = 0
+    Instance.new("UICorner", box).CornerRadius = UDim.new(0, 4)
     
-    local bc2 = Instance.new("UICorner")
-    bc2.CornerRadius = UDim.new(0, 4)
-    bc2.Parent = box
-    
-    local txt = Instance.new("TextLabel")
-    txt.Parent = box
-    txt.BackgroundTransparency = 1
-    txt.Size = UDim2.new(0.6, 0, 1, 0)
-    txt.Position = UDim2.new(0.05, 0, 0, 0)
-    txt.Font = Enum.Font.Gotham
-    txt.Text = label
-    txt.TextColor3 = Color3.fromRGB(255, 255, 255)
-    txt.TextSize = 12
-    txt.TextXAlignment = Enum.TextXAlignment.Left
+    local lbl = Instance.new("TextLabel")
+    lbl.Parent = box
+    lbl.BackgroundTransparency = 1
+    lbl.Size = UDim2.new(0.58, 0, 1, 0)
+    lbl.Position = UDim2.new(0.05, 0, 0, 0)
+    lbl.Font = Enum.Font.Gotham
+    lbl.Text = text
+    lbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+    lbl.TextSize = 11
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
     
     local btn = Instance.new("TextButton")
     btn.Parent = box
     btn.BackgroundColor3 = Color3.fromRGB(200, 45, 45)
-    btn.Size = UDim2.new(0.28, 0, 0.7, 0)
-    btn.Position = UDim2.new(0.68, 0, 0.15, 0)
+    btn.Size = UDim2.new(0.3, 0, 0.7, 0)
+    btn.Position = UDim2.new(0.66, 0, 0.15, 0)
     btn.Font = Enum.Font.GothamBold
     btn.Text = "OFF"
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextSize = 10
+    btn.TextSize = 9
     btn.BorderSizePixel = 0
     btn.AutoButtonColor = false
-    
-    local bc3 = Instance.new("UICorner")
-    bc3.CornerRadius = UDim.new(0, 3)
-    bc3.Parent = btn
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 3)
     
     local on = false
-    
     btn.MouseButton1Click:Connect(function()
         on = not on
-        if on then
-            btn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
-            btn.Text = "ON"
-        else
-            btn.BackgroundColor3 = Color3.fromRGB(200, 45, 45)
-            btn.Text = "OFF"
-        end
-        if callback then callback(on) end
+        btn.BackgroundColor3 = on and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(200, 45, 45)
+        btn.Text = on and "ON" or "OFF"
+        if cb then cb(on) end
     end)
-    
-    return btn
-end-- Функция создания кнопки
-local function MakeButton(parent, label, yPos, cb)
+end-- Функция кнопки
+local function addBtn(parent, text, y, cb)
     local btn = Instance.new("TextButton")
     btn.Parent = parent
-    btn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-    btn.Size = UDim2.new(0.84, 0, 0, 30)
-    btn.Position = UDim2.new(0.08, 0, yPos, 0)
+    btn.BackgroundColor3 = Color3.fromRGB(38, 38, 48)
+    btn.Size = UDim2.new(0.84, 0, 0, 28)
+    btn.Position = UDim2.new(0.08, 0, y, 0)
     btn.Font = Enum.Font.Gotham
-    btn.Text = label
+    btn.Text = text
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextSize = 12
+    btn.TextSize = 11
     btn.BorderSizePixel = 0
-    btn.AutoButtonColor = false
-    
-    local bc4 = Instance.new("UICorner")
-    bc4.CornerRadius = UDim.new(0, 4)
-    bc4.Parent = btn
-    
-    btn.MouseEnter:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(200, 40, 40)}):Play()
-    end)
-    btn.MouseLeave:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(35, 35, 45)}):Play()
-    end)
-    
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
     if cb then btn.MouseButton1Click:Connect(cb) end
     return btn
 end
 
--- Кнопки меню
-MakeToggle(mainMenu, "Aimbot", 0.13, function(s) aimbotOn = s end)
-MakeButton(mainMenu, "Key: E", 0.26, function()
-    -- Смена клавиши
+-- Наполнение меню
+addToggle(mainMenu, "Aimbot", 0.13, function(s) aimbot = s end)
+addBtn(mainMenu, "Key: E", 0.25, function()
     if aimKey == Enum.KeyCode.E then aimKey = Enum.KeyCode.Q
     elseif aimKey == Enum.KeyCode.Q then aimKey = Enum.KeyCode.F
     else aimKey = Enum.KeyCode.E end
 end)
-
-MakeToggle(mainMenu, "TriggerBot", 0.39, function(s) triggerOn = s end)
-MakeToggle(mainMenu, "ESP", 0.52, function(s) espOn = s end)
-MakeToggle(mainMenu, "SpeedHack", 0.65, function(s)
-    speedOn = s
+addToggle(mainMenu, "TriggerBot", 0.38, function(s) trigger = s end)
+addToggle(mainMenu, "ESP", 0.51, function(s) esp = s end)
+addToggle(mainMenu, "SpeedHack", 0.64, function(s)
+    speed = s
     local c = LocalPlayer.Character
     if c and c:FindFirstChild("Humanoid") then
-        c.Humanoid.WalkSpeed = s and (normalSpeed * speedX) or normalSpeed
+        c.Humanoid.WalkSpeed = s and (16 * speedX) or 16
     end
 end)
-
-MakeButton(mainMenu, "Speed: 2x", 0.78, function()
+addBtn(mainMenu, "Speed: 2x", 0.77, function()
     speedX = speedX + 1
     if speedX > 5 then speedX = 1 end
-    if speedOn then
+    if speed then
         local c = LocalPlayer.Character
         if c and c:FindFirstChild("Humanoid") then
-            c.Humanoid.WalkSpeed = normalSpeed * speedX
+            c.Humanoid.WalkSpeed = 16 * speedX
         end
     end
 end)
 
---==============================================
--- ОТКРЫТИЕ МЕНЮ ПО КНОПКЕ
---==============================================
+-- Открытие по кнопке
 floatBtn.MouseButton1Click:Connect(function()
-    if dragOn then return end
-    
-    if not Activated then
-        -- Показываем активацию
+    if drag then return end
+    if not activated then
         actFrame.Visible = true
         codeBox.Text = ""
-        errText.Text = ""
+        errLabel.Text = ""
     else
-        -- Открываем/закрываем меню
         mainMenu.Visible = not mainMenu.Visible
-        menuOpen = mainMenu.Visible
     end
 end)
 
@@ -622,46 +453,37 @@ end)
 
 -- Аимбот
 RunService.RenderStepped:Connect(function()
-    if not Activated then return end
-    if not aimbotOn then return end
+    if not activated or not aimbot then return end
     if not UserInputService:IsKeyDown(aimKey) then return end
     
-    local best = nil
-    local bestDist = 99999
-    
-    for _, plr in ipairs(Players:GetPlayers()) do
-        if plr == LocalPlayer then continue end
-        local c = plr.Character
-        if c then
-            local head = c:FindFirstChild("Head")
-            local hum = c:FindFirstChild("Humanoid")
-            if head and hum and hum.Health > 0 then
-                local sp, onScr = Camera:WorldToViewportPoint(head.Position)
-                if onScr then
-                    local mid = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
-                    local d = (Vector2.new(sp.X, sp.Y) - mid).Magnitude
-                    if d < bestDist then
-                        bestDist = d
-                        best = head
+    local best, bestD = nil, 99999
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then
+            local c = p.Character
+            if c then
+                local h = c:FindFirstChild("Head")
+                local hm = c:FindFirstChild("Humanoid")
+                if h and hm and hm.Health > 0 then
+                    local sp, onScr = Camera:WorldToViewportPoint(h.Position)
+                    if onScr then
+                        local d = (Vector2.new(sp.X, sp.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
+                        if d < bestD then bestD = d; best = h end
                     end
                 end
             end
         end
     end
-    
-    if best then
-        Camera.CFrame = CFrame.new(Camera.CFrame.Position, best.Position)
-    end
+    if best then Camera.CFrame = CFrame.new(Camera.CFrame.Position, best.Position) end
 end)
 
 -- Триггербот
-UserInputService.InputBegan:Connect(function(inp)
-    if not Activated then return endif not triggerOn then return end
-    if inp.UserInputType == Enum.UserInputType.MouseButton2 then
+UserInputService.InputBegan:Connect(function(i)
+    if not activated or not trigger then return end
+    if i.UserInputType == Enum.UserInputType.MouseButton2 then
         local m = LocalPlayer:GetMouse()
         if m.Target and m.Target.Parent then
-            local h = m.Target.Parent:FindFirstChild("Humanoid")
-            if h and h.Health > 0 then
+            local hm = m.Target.Parent:FindFirstChild("Humanoid")
+            if hm and hm.Health > 0 then
                 mouse1press()
                 task.wait(0.04)
                 mouse1release()
@@ -671,9 +493,93 @@ UserInputService.InputBegan:Connect(function(inp)
 end)
 
 -- ESP
-local function MakeESP(plr)
-    local e = {}
+local function newESP()
+    return {
+        box = Drawing.new("Square"),
+        line = Drawing.new("Line"),
+        name = Drawing.new("Text"),
+        dist = Drawing.new("Text")
+    }
+end
+
+RunService.Heartbeat:Connect(function()
+    if not activated or not esp then
+        for _, e in pairs(espList) do
+            for _, d in pairs(e) do
+                pcall(function() d.Visible = false end)
+            end
+        endreturn
+    end
     
-    e.box = Drawing.new("Square")
-    e.box.Visible = false
-    e.box.Color = Color3.fromRGB(2
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p == LocalPlayer then continue end
+        local c = p.Character
+        if not c or not c:FindFirstChild("Head") then
+            if espList[p] then
+                for _, d in pairs(espList[p]) do pcall(function() d:Remove() end) end
+                espList[p] = nil
+            end
+            continue
+        end
+        
+        local hm = c:FindFirstChild("Humanoid")
+        if hm and hm.Health <= 0 then continue end
+        
+        if not espList[p] then
+            local e = newESP()
+            e.box.Color = Color3.fromRGB(200, 40, 40)
+            e.box.Thickness = 1.5
+            e.box.Filled = false
+            e.line.Color = Color3.fromRGB(200, 40, 40)
+            e.line.Thickness = 1
+            e.name.Color = Color3.fromRGB(255, 255, 255)
+            e.name.Size = 13
+            e.name.Center = true
+            e.dist.Color = Color3.fromRGB(180, 180, 180)
+            e.dist.Size = 11
+            e.dist.Center = true
+            espList[p] = e
+        end
+        
+        local e = espList[p]
+        local head = c.Head
+        local root = c:FindFirstChild("HumanoidRootPart")
+        if not root then continue end
+        
+        local hp, hs = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.4, 0))
+        local rp = Camera:WorldToViewportPoint(root.Position - Vector3.new(0, 3, 0))
+        
+        if not hs then
+            for _, d in pairs(e) do pcall(function() d.Visible = false end) end
+            continue
+        end
+        
+        local dist = (Camera.CFrame.Position - root.Position).Magnitude
+        local bh = 2000 / dist
+        local bw = bh * 0.65
+        local top = Vector2.new(hp.X - bw/2, hp.Y - bh/2)
+        
+        pcall(function() e.box.Visible = true; e.box.Position = top; e.box.Size = Vector2.new(bw, bh) end)
+        pcall(function() e.line.Visible = true; e.line.From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y); e.line.To = Vector2.new(rp.X, rp.Y) end)
+        pcall(function() e.name.Visible = true; e.name.Position = Vector2.new(hp.X, top.Y - 16); e.name.Text = p.Name end)
+        pcall(function() e.dist.Visible = true; e.dist.Position = Vector2.new(hp.X, top.Y + bh + 3); e.dist.Text = math.floor(dist) .. "m" end)
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(p)
+    if espList[p] then
+        for _, d in pairs(espList[p]) do pcall(function() d:Remove() end) end
+        espList[p] = nil
+    end
+end)
+
+-- Спидхак при респавне
+LocalPlayer.CharacterAdded:Connect(function(c)
+    if speed and activated then
+        task.wait(0.1)
+        c:WaitForChild("Humanoid").WalkSpeed = 16 * speedX
+    end
+end)
+
+print("[HENO] Загружен! Код: " .. CODE)
+if activated then print("[HENO] Активно! Осталось: " .. fmt(remain)) end
