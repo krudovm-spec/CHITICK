@@ -335,7 +335,6 @@ activateBtn.MouseButton1Click:Connect(function()
         end
         
         -- Зажигаем точки красным по количеству попыток
-
 for i = 1, 3 do
             local dot = statusDots:FindFirstChild("Dot"..i)
             if dot then
@@ -366,11 +365,16 @@ Services.RunService.Stepped:Connect(function()
         if hum then hum.WalkSpeed = 0 end
     end
 end)
---[[
- CHEAT+PORNO
 -- ========================================
 -- ОСНОВНЫЕ ФУНКЦИИ
 -- ========================================
+-- Функционал вкл/выкл
+local Settings = {
+    ESP = true,            -- Подсветка врагов
+    AIMBOT = true,         -- Аим на кнопку
+    KILL_AURA = true,      -- Удар мечом по радиусу
+    BIG_HEADS = true,      -- Большие головы
+    DEATH_MARKERS = true   -- Метки смерти
 function StartScript()
     -- Разблокируем движение окончательно
     local char = LP.Character or LP.CharacterAdded:Wait()
